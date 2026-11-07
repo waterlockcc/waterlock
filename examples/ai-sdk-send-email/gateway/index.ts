@@ -5,7 +5,6 @@ import { claudeCode } from "ai-sdk-provider-claude-code";
 import { checkPrompt, checkSystemPrompt, verdictSchema } from "../../../src/checks/index.js";
 import { createGateway, createSessions, memoryStore, staticToken } from "../../../src/index.js";
 import { gmail } from "../../../src/providers/gmail/index.js";
-import { policy } from "./policy.js";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const HOST = process.env.HOST ?? "127.0.0.1";
@@ -33,8 +32,19 @@ const sessions = createSessions({
 
 const gateway = createGateway({
   providers: [gmail({ credentials: staticToken({ token: GMAIL_TOKEN ?? "fake" }) })],
+  // Rules are typed from `providers`: autocomplete on actions, params and decoded context.
   policy: [
-    ...policy.rules,
+    {
+      rule: (r) =>
+        r.action === "gmail.users.messages.send" &&
+        r.context.recipients.length > 0 &&
+        r.context.recipients.every((addr) => addr === r.session.onBehalfOf),
+      reason: "You can only send email to yourself.",
+    },
+    {
+      rule: (r) => r.action === "gmail.users.messages.send" && r.check("The email contains billing information"),
+      action: "deny",
+    },
     {
       rule: (r) => r.action === "gmail.users.messages.send" && r.check("The user did not ask for this email to be sent"),
       action: "deny",
