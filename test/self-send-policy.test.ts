@@ -14,7 +14,6 @@ const setup = () => {
       {
         provider: "gmail",
         action: "gmail.users.messages.send",
-        groups: ["gmail:send"],
         params: { userId: "me" },
         context: decodeMessageSend(new TextEncoder().encode(JSON.stringify({ raw: Buffer.from(mime).toString("base64url") }))),
         session: { sid: "s", provider: "gmail", agent: "a", onBehalfOf: SELF, iat: 0, exp: 0 },

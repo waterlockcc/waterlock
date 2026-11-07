@@ -6,32 +6,33 @@ import { MockLanguageModelV4 } from "ai/test";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createGateway, createSessions, staticToken } from "../src/index.js";
 import { gmail as gmailProvider } from "../src/providers/gmail/index.js";
+import { fakeUpstream } from "./fixtures/fake-upstream.js";
 import { mockCheckModel, modelCheck } from "./fixtures/mock-check-model.js";
 import { selfSendPolicy } from "./fixtures/self-send-policy.js";
 import { createSendEmailTools } from "./fixtures/send-email-tool.js";
 
 const SELF = "alice@acme.com";
 const sessions = createSessions({ signingKey: "test-signing-key-0123456789abcdef" });
-const sent: string[] = [];
+let up: Awaited<ReturnType<typeof fakeUpstream>>;
 let server: ServerType;
 let rootUrl: string;
 
 beforeAll(async () => {
+  up = await fakeUpstream(() => Response.json({ id: `msg-${up.seen.length}` }));
   const gateway = createGateway({
-    providers: [gmailProvider({ credentials: staticToken({ token: "real-google-token" }) })],
+    providers: [gmailProvider({ credentials: staticToken({ token: "real-google-token" }), upstream: up.url })],
     policy: selfSendPolicy,
     check: modelCheck(mockCheckModel()),
     sessions,
-    upstreamFetch: async (_url, init) => {
-      sent.push(String(init?.body ? new TextDecoder().decode(init.body as Uint8Array) : ""));
-      return Response.json({ id: `msg-${sent.length}` });
-    },
   });
   server = serve({ fetch: gateway.fetch, port: 0, hostname: "127.0.0.1" });
   await new Promise((r) => server.once("listening", r));
   rootUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`;
 });
-afterAll(() => server.close());
+afterAll(async () => {
+  server.close();
+  await up.close();
+});
 
 const usage = {
   inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 },
@@ -76,7 +77,7 @@ describe("AI SDK tools through the gateway", () => {
       expect.stringContaining("You can only send email to yourself."),
       expect.stringContaining("The email mentions billing."),
     ]);
-    expect(sent).toHaveLength(1);
+    expect(up.seen).toHaveLength(1);
 
     // The model's second turn received the denial text as tool output.
     const secondPrompt = JSON.stringify(model.doGenerateCalls[1]!.prompt);

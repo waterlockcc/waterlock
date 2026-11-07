@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, onTestFinished } from "vitest";
 import { createGateway, createProvider, createSessions, staticToken, type ProviderRequest } from "../src/index.js";
 import type { OperationTable } from "../src/core/types.js";
+import { fakeUpstream } from "./fixtures/fake-upstream.js";
 
 /** Two providers with the same route: the session token decides which one a request is for. */
 const graphql = (id: string): OperationTable => ({
@@ -10,56 +11,52 @@ const graphql = (id: string): OperationTable => ({
   operations: [{ action: `${id}.graphql`, method: "POST", path: "/graphql", variant: "standard", params: [], hasBody: true }],
 });
 
-const provider = (id: string) =>
+const provider = (id: string, upstream = `https://${id}.example`) =>
   createProvider<ProviderRequest<string, `${string}.graphql`>>({
     id,
-    upstream: `https://${id}.example`,
+    upstream,
     table: graphql(id),
     allowedGlobalQueryParams: [],
     credentials: staticToken({ token: `${id}-secret` }),
   });
 
-function setup() {
+async function setup() {
   const sessions = createSessions({ signingKey: "x".repeat(32) });
-  const forwarded: { url: string; auth: string | null }[] = [];
+  const alpha = await fakeUpstream();
+  const beta = await fakeUpstream();
+  onTestFinished(alpha.close);
+  onTestFinished(beta.close);
   const gateway = createGateway({
-    providers: [provider("alpha"), provider("beta")],
+    providers: [provider("alpha", alpha.url), provider("beta", beta.url)],
     policy: [{ when: (r) => r.action !== "beta.graphql" || r.session.agent === "trusted" }],
     sessions,
-    upstreamFetch: async (input, init) => {
-      const req = new Request(input, init);
-      forwarded.push({ url: req.url, auth: req.headers.get("authorization") });
-      return Response.json({});
-    },
   });
   const call = (token: string) =>
     gateway.fetch(new Request("http://gw/graphql", { method: "POST", headers: { authorization: `Bearer ${token}` }, body: "{}" }));
-  return { sessions, forwarded, call };
+  return { sessions, alpha, beta, call };
 }
 
 describe("routing by token", () => {
   it("same path goes to the provider named in the token", async () => {
-    const { sessions, forwarded, call } = setup();
+    const { sessions, alpha, beta, call } = await setup();
     const a = await sessions.mint({ provider: "alpha", agent: "x", onBehalfOf: "u" });
     const b = await sessions.mint({ provider: "beta", agent: "trusted", onBehalfOf: "u" });
 
     expect((await call(a.token)).status).toBe(200);
     expect((await call(b.token)).status).toBe(200);
-    expect(forwarded).toEqual([
-      { url: "https://alpha.example/graphql", auth: "Bearer alpha-secret" },
-      { url: "https://beta.example/graphql", auth: "Bearer beta-secret" },
-    ]);
+    expect(alpha.seen.map((s) => [s.path, s.headers.authorization])).toEqual([["/graphql", "Bearer alpha-secret"]]);
+    expect(beta.seen.map((s) => [s.path, s.headers.authorization])).toEqual([["/graphql", "Bearer beta-secret"]]);
   });
 
   it("policy sees the token's provider", async () => {
-    const { sessions, forwarded, call } = setup();
+    const { sessions, beta, call } = await setup();
     const b = await sessions.mint({ provider: "beta", agent: "x", onBehalfOf: "u" });
     expect((await call(b.token)).status).toBe(403);
-    expect(forwarded).toHaveLength(0);
+    expect(beta.seen).toHaveLength(0);
   });
 
   it("token for a provider this gateway doesn't have -> 403", async () => {
-    const { sessions, call } = setup();
+    const { sessions, call } = await setup();
     const { token } = await sessions.mint({ provider: "gamma", agent: "x", onBehalfOf: "u" });
     const res = await call(token);
     expect(res.status).toBe(403);
@@ -67,7 +64,7 @@ describe("routing by token", () => {
   });
 
   it("tokens for several providers can share one session id", async () => {
-    const { sessions } = setup();
+    const sessions = createSessions({ signingKey: "x".repeat(32) });
     const a = await sessions.mint({ provider: "alpha", agent: "x", onBehalfOf: "u" });
     const b = await sessions.mint({ provider: "beta", agent: "x", onBehalfOf: "u", sid: a.claims.sid });
     expect(b.claims.sid).toBe(a.claims.sid);

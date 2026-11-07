@@ -1,16 +1,14 @@
 import type { SessionClaims } from "./session.js";
 
-/** What a rule sees. Providers narrow this with literal action/group/param types (autocomplete only). */
+/** What a rule sees. Providers narrow this with literal action/param types (autocomplete only). */
 export interface ProviderRequest<
   P extends string = string,
   A extends string = string,
-  G extends string = string,
   Params extends object = object,
   Ctx extends object = object,
 > {
   provider: P;
   action: A;
-  groups: readonly G[];
   /** Typed path + query params, parsed by the matcher. */
   params: Params;
   /** Fields extracted from the body by a provider decoder (e.g. Gmail recipients). */
@@ -20,12 +18,6 @@ export interface ProviderRequest<
 
 export type AnyRequest = ProviderRequest;
 
-type GroupOf<R> = R extends { groups: readonly (infer G)[] } ? G : never;
-
-export type RuleInput<R extends AnyRequest> = R & {
-  in(group: GroupOf<R>): boolean;
-};
-
 /**
  * One policy row. `when` is either:
  *   - a sync function over the request (static), allow or deny, or
@@ -34,7 +26,7 @@ export type RuleInput<R extends AnyRequest> = R & {
  */
 export type PolicyRule<R extends AnyRequest = AnyRequest> =
   | {
-      when: (r: RuleInput<R>) => boolean;
+      when: (r: R) => boolean;
       /** Effect when the rule matches. Default "allow". May gain members later (e.g. "approve"). */
       action?: "allow" | "deny";
       /** Context for the calling agent when this rule decides the outcome. */

@@ -2,40 +2,25 @@ import type { AddressInfo } from "node:net";
 import { serve, type ServerType } from "@hono/node-server";
 import { auth, gmail } from "@googleapis/gmail";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { fakeUpstream, type SeenRequest } from "./fixtures/fake-upstream.js";
 import { policy } from "./fixtures/gmail-policy.js";
 import { createGateway, createSessions, staticToken } from "../src/index.js";
 import { gmail as gmailProvider } from "../src/providers/gmail/index.js";
 
-interface Captured {
-  url: string;
-  method: string;
-  headers: Record<string, string>;
-  body: string;
-}
-
 const REAL_TOKEN = "ya29.REAL-GOOGLE-TOKEN";
 const sessions = createSessions({ signingKey: "test-signing-key-0123456789abcdef" });
-let upstream: Captured[] = [];
+let up: Awaited<ReturnType<typeof fakeUpstream>>;
+let upstream: SeenRequest[];
 let server: ServerType;
 let base: string;
 
 beforeAll(async () => {
+  up = await fakeUpstream(({ path }) => Response.json(path.split("?")[0]!.endsWith("/send") ? { id: "sent-1" } : { messages: [{ id: "m1", threadId: "t1" }] }));
+  upstream = up.seen;
   const gw = createGateway({
-    providers: [gmailProvider({ credentials: staticToken({ token: REAL_TOKEN }) })],
+    providers: [gmailProvider({ credentials: staticToken({ token: REAL_TOKEN }), upstream: up.url })],
     policy,
     sessions,
-    upstreamFetch: async (input, init) => {
-      const req = new Request(input, init);
-      upstream.push({
-        url: req.url,
-        method: req.method,
-        headers: Object.fromEntries(req.headers),
-        body: await req.text(),
-      });
-      const path = new URL(req.url).pathname;
-      const body = path.endsWith("/send") ? { id: "sent-1" } : { messages: [{ id: "m1", threadId: "t1" }] };
-      return Response.json(body);
-    },
   });
   await new Promise<void>((resolve) => {
     server = serve({ fetch: gw.fetch, port: 0, hostname: "127.0.0.1" }, () => resolve());
@@ -43,9 +28,12 @@ beforeAll(async () => {
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
 
-afterAll(() => server.close());
+afterAll(async () => {
+  server.close();
+  await up.close();
+});
 beforeEach(() => {
-  upstream = [];
+  upstream.length = 0;
 });
 
 /** The harness side: stock googleapis client. Only `auth` and `rootUrl` differ from normal use. */
@@ -77,7 +65,7 @@ describe("gateway with real googleapis client", () => {
     expect(res.status).toBe(200);
     expect(res.data.messages?.[0]?.id).toBe("m1");
     expect(upstream).toHaveLength(1);
-    expect(upstream[0]!.url).toBe("https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=10&q=invoice");
+    expect(upstream[0]!.path).toBe("/gmail/v1/users/me/messages?maxResults=10&q=invoice");
     expect(upstream[0]!.headers.authorization).toBe(`Bearer ${REAL_TOKEN}`);
     expect(JSON.stringify(upstream[0]!.headers)).not.toContain(token);
   });

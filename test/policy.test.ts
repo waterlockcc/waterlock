@@ -8,7 +8,6 @@ import { mockCheckModel, modelCheck } from "./fixtures/mock-check-model.js";
 const req: AnyRequest = {
   provider: "gmail",
   action: "gmail.users.messages.list",
-  groups: ["gmail:read"],
   params: {},
   context: { text: "hello" },
   session: { sid: "s", provider: "gmail", agent: "a", onBehalfOf: "u", iat: 0, exp: 0 },
@@ -32,12 +31,12 @@ describe("static rules", () => {
   });
 
   it("deny beats allow, with its reason", async () => {
-    const p = definePolicy([{ when: () => true }, { when: (r) => r.in("gmail:read"), action: "deny", reason: "No reads today." }]);
+    const p = definePolicy([{ when: () => true }, { when: (r) => r.action === "gmail.users.messages.list", action: "deny", reason: "No reads today." }]);
     expect(await evaluate(p)).toMatchObject({ effect: "deny", rules: ["#1"], reason: "No reads today." });
   });
 
   it("default deny lists allow-rule reasons as hints", async () => {
-    const p = definePolicy([{ when: (r) => r.in("gmail:send"), reason: "Only sending is allowed." }]);
+    const p = definePolicy([{ when: (r) => r.action === "gmail.users.messages.send", reason: "Only sending is allowed." }]);
     expect(await evaluate(p)).toMatchObject({ effect: "deny", reason: "Only sending is allowed." });
   });
 
@@ -140,10 +139,10 @@ describe("check helpers", () => {
 
 // Compile-time checks: these lines must fail typecheck. `pnpm typecheck` covers them.
 definePolicy<GmailRequest>([
-  // @ts-expect-error typo in group name
-  { when: (r) => r.in("gmail:raed") },
-  // @ts-expect-error recipient_domains is string[] | null until narrowed to messages.send
-  { when: (r) => r.in("gmail:send") && r.context.recipient_domains.every((d) => d === "acme.com") },
+  // @ts-expect-error typo in action name
+  { when: (r) => r.action === "gmail.users.mesages.send" },
+  // @ts-expect-error recipient_domains only exists once narrowed to messages.send
+  { when: (r) => r.context.recipient_domains.every((d) => d === "acme.com") },
   // @ts-expect-error maxResults only exists on list actions
   { when: (r) => r.params.maxResults > 10 },
   { when: (r) => r.action === "gmail.users.messages.send" && r.context.recipient_domains.every((d) => d === "acme.com") },
@@ -160,8 +159,8 @@ import { createGateway, createSessions, staticToken, type ProviderDefinition, ty
 import { gmail } from "../src/providers/gmail/index.js";
 function _gatewayTypes() {
   const sessions = createSessions({ signingKey: "x".repeat(32) });
-  const gmailOnly = definePolicy<GmailRequest>([{ when: (r) => r.in("gmail:read") }]);
-  const other = {} as ProviderDefinition<ProviderRequest<"other", "other.thing.do", "other:write">>;
+  const gmailOnly = definePolicy<GmailRequest>([{ when: (r) => r.action === "gmail.users.messages.list" }]);
+  const other = {} as ProviderDefinition<ProviderRequest<"other", "other.thing.do">>;
   createGateway({ providers: [gmail({ credentials: staticToken({ token: "t" }) })], policy: gmailOnly, sessions });
   // @ts-expect-error Gmail-only policy can't govern a gateway that also serves "other"
   createGateway({ providers: [gmail({ credentials: staticToken({ token: "t" }) }), other], policy: gmailOnly, sessions });
@@ -169,9 +168,9 @@ function _gatewayTypes() {
   createGateway({
     providers: [gmail({ credentials: staticToken({ token: "t" }) }), other],
     policy: [
-      { when: (r) => r.in("gmail:read") || r.action === "other.thing.do" },
-      // @ts-expect-error typo in group name still caught inline
-      { when: (r) => r.in("gmail:raed") },
+      { when: (r) => r.action === "gmail.users.messages.list" || r.action === "other.thing.do" },
+      // @ts-expect-error typo in action name still caught inline
+      { when: (r) => r.action === "other.thing.od" },
     ],
     sessions,
   });

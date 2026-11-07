@@ -5,6 +5,7 @@ import { claudeCode } from "ai-sdk-provider-claude-code";
 import { checkPrompt, checkSystemPrompt, verdictSchema } from "../../../src/checks/index.js";
 import { createGateway, createSessions, memoryStore, staticToken } from "../../../src/index.js";
 import { gmail } from "../../../src/providers/gmail/index.js";
+import { startFakeGmail } from "./fake-gmail.js";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const HOST = process.env.HOST ?? "127.0.0.1";
@@ -31,7 +32,11 @@ const sessions = createSessions({
 });
 
 const gateway = createGateway({
-  providers: [gmail({ credentials: staticToken({ token: GMAIL_TOKEN ?? "fake" }) })],
+  providers: [
+    GMAIL_TOKEN
+      ? gmail({ credentials: staticToken({ token: GMAIL_TOKEN }) })
+      : gmail({ credentials: staticToken({ token: "fake" }), upstream: await startFakeGmail() }),
+  ],
   // Rules are typed from `providers`: autocomplete on actions, params and decoded context.
   policy: [
     {
@@ -57,7 +62,6 @@ const gateway = createGateway({
     return output;
   },
   sessions,
-  ...(GMAIL_TOKEN ? {} : { upstreamFetch: async () => Response.json({ id: "fake-msg-1" }) }),
 });
 
 // Stand-in for the trusted front door: mint a session, record what the human said,

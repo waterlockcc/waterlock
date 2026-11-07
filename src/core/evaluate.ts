@@ -1,4 +1,4 @@
-import type { AnyRequest, Policy, PolicyRule, RuleInput } from "./policy.js";
+import type { AnyRequest, Policy, PolicyRule } from "./policy.js";
 import type { SessionStore } from "./store.js";
 
 /**
@@ -49,7 +49,7 @@ export async function evaluatePolicy<R extends AnyRequest>(
   const rules = policy.rules.map((rule, i) => ({ id: `#${i}`, rule, action: rule.action ?? "allow" }));
   const deny = (ids: string[], reason: string): Decision => ({ effect: "deny", rules: ids, reason });
 
-  const input = ruleInput(req);
+  const input = Object.freeze({ ...req }); // rules can't mutate what later rules see
   const matched: typeof rules = [];
   for (const r of rules) {
     if (typeof r.rule.when !== "function") continue;
@@ -131,11 +131,6 @@ async function runChecks<R extends AnyRequest>(
       );
     }
   });
-}
-
-function ruleInput<R extends AnyRequest>(req: R): RuleInput<R> {
-  const groups = new Set<string>(req.groups);
-  return Object.freeze({ ...req, in: (g: string) => groups.has(g) }) as unknown as RuleInput<R>;
 }
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {

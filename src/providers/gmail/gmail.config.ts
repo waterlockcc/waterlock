@@ -1,8 +1,7 @@
 import { defineCodegenConfig } from "../../codegen/config.js";
 
 /**
- * Codegen config for the Gmail Discovery doc. Groups live in groups.ts, applied at
- * runtime with withGroups. Review codegen-report.md after any change to spec.json.
+ * Codegen config for the Gmail Discovery doc. Review codegen-report.md after any change to spec.json.
  */
 export default defineCodegenConfig({
   provider: "gmail",

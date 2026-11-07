@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, onTestFinished } from "vitest";
 import { checkPrompt } from "../src/checks/index.js";
 import { createGateway, createSessions, memoryStore, staticToken, type Check, type SessionStore } from "../src/index.js";
 import { gmail } from "../src/providers/gmail/index.js";
+import { fakeUpstream } from "./fixtures/fake-upstream.js";
 
 const KEY = "test-signing-key-0123456789abcdef";
 const SELF = "alice@acme.com";
@@ -13,7 +14,9 @@ const sendRequest = (token: string, to = SELF) =>
     body: JSON.stringify({ raw: Buffer.from(`To: ${to}\r\nSubject: s\r\n\r\nhi`).toString("base64url") }),
   });
 
-function setup(store?: SessionStore) {
+async function setup(store?: SessionStore) {
+  const up = await fakeUpstream(() => Response.json({ id: "m1" }));
+  onTestFinished(up.close);
   const sessions = createSessions({ signingKey: KEY, ...(store ? { store } : {}) });
   const prompts: string[] = []; // what checkPrompt produced for each check
   const check: Check = async ({ condition, request, store }) => {
@@ -21,14 +24,13 @@ function setup(store?: SessionStore) {
     return { result: false };
   };
   const gateway = createGateway({
-    providers: [gmail({ credentials: staticToken({ token: "real" }) })],
+    providers: [gmail({ credentials: staticToken({ token: "real" }), upstream: up.url })],
     policy: [
       { when: (r) => r.action === "gmail.users.messages.send" && r.context.recipients.every((a) => a === r.session.onBehalfOf) },
       { when: "not what the user asked", action: "deny" },
     ],
     sessions,
     check,
-    upstreamFetch: async () => Response.json({ id: "m1" }),
   });
   return { sessions, gateway, prompts };
 }
@@ -52,7 +54,7 @@ describe("memoryStore", () => {
 
 describe("gateway + store", () => {
   it("check gets the store; checkPrompt reads this session's messages by the verified token", async () => {
-    const { sessions, gateway, prompts } = setup(memoryStore());
+    const { sessions, gateway, prompts } = await setup(memoryStore());
     const a = await sessions.mint({ provider: "gmail", agent: "assistant", onBehalfOf: SELF });
     const b = await sessions.mint({ provider: "gmail", agent: "assistant", onBehalfOf: SELF });
     await sessions.addUserMessage({ session: a.claims, message: { text: "Email me a reminder to buy milk" } });
@@ -65,7 +67,7 @@ describe("gateway + store", () => {
   });
 
   it("no store: no user messages in the prompt, and addUserMessage refuses", async () => {
-    const { sessions, gateway, prompts } = setup();
+    const { sessions, gateway, prompts } = await setup();
     const { token, claims } = await sessions.mint({ provider: "gmail", agent: "assistant", onBehalfOf: SELF });
     await expect(sessions.addUserMessage({ session: claims, message: { text: "hi" } })).rejects.toThrow(
       /does not support addUserMessage/,
@@ -78,7 +80,7 @@ describe("gateway + store", () => {
   it("loads messages only when a check runs", async () => {
     let reads = 0;
     const store: SessionStore = { getUserMessages: async () => (reads++, { items: [{ text: "hi" }] }) };
-    const { sessions, gateway } = setup(store);
+    const { sessions, gateway } = await setup(store);
     const { token } = await sessions.mint({ provider: "gmail", agent: "assistant", onBehalfOf: SELF });
     expect((await gateway.fetch(sendRequest(token, "bob@acme.com"))).status).toBe(403); // static deny, no check
     expect(reads).toBe(0);
@@ -88,7 +90,7 @@ describe("gateway + store", () => {
 
   it("a failing store denies", async () => {
     const store: SessionStore = { getUserMessages: async () => { throw new Error("db down"); } };
-    const { sessions, gateway } = setup(store);
+    const { sessions, gateway } = await setup(store);
     const { token } = await sessions.mint({ provider: "gmail", agent: "assistant", onBehalfOf: SELF });
     const res = await gateway.fetch(sendRequest(token));
     expect(res.status).toBe(403);
@@ -98,7 +100,7 @@ describe("gateway + store", () => {
 
 describe("checkPrompt with a store", () => {
   const session = { sid: "s", provider: "gmail", agent: "a", onBehalfOf: "u", iat: 0, exp: 0 };
-  const req = { provider: "gmail", action: "gmail.users.messages.send", groups: [], params: {}, context: { text: "hi" }, session };
+  const req = { provider: "gmail", action: "gmail.users.messages.send", params: {}, context: { text: "hi" }, session };
 
   it("adds a user_messages block only when the store has messages, capped by maxUserMessages", async () => {
     const store = memoryStore();

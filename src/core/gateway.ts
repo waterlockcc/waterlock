@@ -18,8 +18,6 @@ export interface GatewayOptions<P extends readonly ProviderDefinition[]> {
   /** Per-check timeout. Default 60s. */
   checkTimeoutMs?: number;
   maxBodyBytes?: number;
-  /** Override for tests. */
-  upstreamFetch?: typeof fetch;
 }
 
 /** Only these request headers reach upstream. Everything else (cookies, method overrides, the session token) is dropped. */
@@ -33,7 +31,6 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
 ) {
   const policy = Array.isArray(opts.policy) ? definePolicy(opts.policy) : opts.policy;
   const maxBody = opts.maxBodyBytes ?? 10 * 1024 * 1024;
-  const upstreamFetch = opts.upstreamFetch ?? fetch;
   const ids = opts.providers.map((p) => p.id);
   const dup = ids.find((id, i) => ids.indexOf(id) !== i);
   if (dup) throw new Error(`provider "${dup}" is configured twice`);
@@ -43,7 +40,6 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
       {
         def: p,
         matcher: createMatcher(p.table, { allowedGlobalQueryParams: p.allowedGlobalQueryParams }),
-        groupsByAction: groupsByAction(p),
       },
     ]),
   );
@@ -93,7 +89,6 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
     const policyReq = {
       provider: entry.def.id,
       action: op.action,
-      groups: entry.groupsByAction.get(op.action) ?? [],
       params: matched.params,
       context,
       session,
@@ -127,7 +122,7 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
     const upstreamUrl = entry.def.upstream.replace(/\/$/, "") + upstreamPath + url.search;
     let upstream: Response;
     try {
-      upstream = await upstreamFetch(upstreamUrl, {
+      upstream = await fetch(upstreamUrl, {
         method,
         headers,
         body: body.length > 0 && method !== "GET" ? (body as BodyInit) : undefined,
@@ -181,14 +176,4 @@ function deny(action: string, rules: string[], reason: string): Response {
 
 function fail(status: number, code: string, message: string, action?: string, rules?: string[]): Response {
   return Response.json({ error: { code, message, ...(action ? { action } : {}), ...(rules?.length ? { rules } : {}) } }, { status });
-}
-
-/** action -> ["<provider>:<group>", ...] from the provider's withGroups registrations. */
-function groupsByAction(p: ProviderDefinition): Map<string, string[]> {
-  const out = new Map<string, string[]>();
-  for (const [name, actions] of Object.entries(p.groups ?? {})) {
-    for (const action of actions) out.set(action, [...(out.get(action) ?? []), `${p.id}:${name}`]);
-  }
-  for (const list of out.values()) list.sort();
-  return out;
 }
