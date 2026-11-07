@@ -1,6 +1,6 @@
 {
   "name": "@waterlock/gateway",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Credential-injecting policy gateway for AI agent tool calls",
   "license": "MIT",
   "type": "module",

@@ -13,4 +13,4 @@ pnpm test
 pnpm build          # -> dist/
 ```
 
-Release: bump `version` in package.json, merge, then publish a GitHub release tagged `v<version>`.
+Release: bump `version` in package.json and merge. CI publishes to npm and creates the `v<version>` release.
