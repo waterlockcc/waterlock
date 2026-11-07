@@ -27,7 +27,7 @@ const checkModel = claudeCode("haiku", {
 
 const sessions = createSessions({
   // Random per start unless set: only this process mints and verifies, so no shared key is needed.
-  signingKey: process.env.AS_SIGNING_KEY ?? crypto.randomUUID() + crypto.randomUUID(),
+  signingKey: process.env.WATERLOCK_SIGNING_KEY ?? crypto.randomUUID() + crypto.randomUUID(),
   store: memoryStore(), // enables user messages for checks; omit for stateless sessions
 });
 
