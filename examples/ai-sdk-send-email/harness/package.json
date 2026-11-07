@@ -1,0 +1,6 @@
+{
+  "name": "ai-sdk-send-email-harness",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "tsx --env-file-if-exists=.env index.ts" }
+}

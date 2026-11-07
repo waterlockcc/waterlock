@@ -1,0 +1,41 @@
+{
+  "name": "@waterlock/gateway",
+  "version": "0.0.1",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./codegen": "./src/codegen/index.ts",
+    "./providers/gmail": "./src/providers/gmail/index.ts",
+    "./checks": "./src/checks/index.ts"
+  },
+  "scripts": {
+    "gen:gmail": "tsx src/codegen/cli.ts src/providers/gmail/gmail.config.ts",
+    "gen:gmail:fetch": "tsx src/codegen/cli.ts src/providers/gmail/gmail.config.ts --fetch",
+    "example": "tsx examples/server.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "example:mail-send": "npm --prefix examples/mail-send-self-no-billing run dev"
+  },
+  "devDependencies": {
+    "@ai-sdk/openai": "^4.0.110",
+    "@googleapis/gmail": "^22.0.2",
+    "@hono/node-server": "^2.1.6",
+    "@types/node": "^26.6.6",
+    "ai": "^7.0.164",
+    "ai-sdk-provider-claude-code": "^4.4.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0",
+    "zod": "^4.6.7"
+  },
+  "peerDependencies": {
+    "zod": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "zod": {
+      "optional": true
+    }
+  }
+}
