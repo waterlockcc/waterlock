@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { policy } from "../examples/mail-send-self-no-billing/policy.js";
+import { policy } from "../examples/ai-sdk-send-email/gateway/policy.js";
 import { evaluatePolicy } from "../src/core/evaluate.js";
 import type { GmailRequest } from "../src/providers/gmail/index.js";
 import { decodeMessageSend } from "../src/providers/gmail/decode.js";
@@ -25,7 +25,7 @@ const setup = () => {
   return { model, evaluate };
 };
 
-describe("mail-send-self-no-billing", () => {
+describe("ai-sdk-send-email policy", () => {
   it("allows send to self after the billing check passes", async () => {
     const { model, evaluate } = setup();
     expect(await evaluate(`To: ${SELF}\r\n\r\nBuy milk`)).toMatchObject({ effect: "allow" });

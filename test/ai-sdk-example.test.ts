@@ -5,7 +5,7 @@ import { generateText, stepCountIs } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTools } from "../examples/ai-sdk-send-email/harness/tools.js";
-import { policy } from "../examples/mail-send-self-no-billing/policy.js";
+import { policy } from "../examples/ai-sdk-send-email/gateway/policy.js";
 import { createGateway, createSessions, staticToken } from "../src/index.js";
 import { gmail as gmailProvider } from "../src/providers/gmail/index.js";
 import { mockCheckModel, modelCheck } from "./mock-judge.js";

@@ -5,7 +5,7 @@ import { claudeCode } from "ai-sdk-provider-claude-code";
 import { checkPrompt, checkSystemPrompt, verdictSchema } from "../../../src/checks/index.js";
 import { createGateway, createSessions, memoryStore, staticToken } from "../../../src/index.js";
 import { gmail } from "../../../src/providers/gmail/index.js";
-import { policy } from "../../mail-send-self-no-billing/policy.js";
+import { policy } from "./policy.js";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const HOST = process.env.HOST ?? "127.0.0.1";

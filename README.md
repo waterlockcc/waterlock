@@ -6,5 +6,4 @@ Policy gateway for agent tool calls. Harness holds a session token; gateway hold
 ```sh
 pnpm gen:gmail      # spec -> src/providers/gmail/generated.ts
 pnpm test
-pnpm example:mail-send
 ```

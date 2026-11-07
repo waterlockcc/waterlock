@@ -1,6 +1,0 @@
-{
-  "name": "mail-send-self-no-billing",
-  "private": true,
-  "type": "module",
-  "scripts": { "dev": "tsx run.ts" }
-}
