@@ -1,21 +1,61 @@
 {
   "name": "@waterlock/gateway",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "description": "Credential-injecting policy gateway for AI agent tool calls",
   "license": "MIT",
-  "private": true,
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/waterlockcc/waterlock.git"
+  },
+  "homepage": "https://github.com/waterlockcc/waterlock#readme",
+  "bugs": "https://github.com/waterlockcc/waterlock/issues",
   "packageManager": "pnpm@10.26.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "files": [
+    "dist"
+  ],
   "exports": {
-    ".": "./src/index.ts",
-    "./codegen": "./src/codegen/index.ts",
-    "./providers/gmail": "./src/providers/gmail/index.ts",
-    "./checks": "./src/checks/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./codegen": {
+      "types": "./dist/codegen/index.d.ts",
+      "default": "./dist/codegen/index.js"
+    },
+    "./providers/gmail": {
+      "types": "./dist/providers/gmail/index.d.ts",
+      "default": "./dist/providers/gmail/index.js"
+    },
+    "./checks": {
+      "types": "./dist/checks/index.d.ts",
+      "default": "./dist/checks/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "prepublishOnly": "pnpm typecheck && pnpm test && pnpm build",
     "gen:gmail": "tsx src/codegen/cli.ts src/providers/gmail/gmail.config.ts",
     "gen:gmail:fetch": "tsx src/codegen/cli.ts src/providers/gmail/gmail.config.ts --fetch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "postal-mime": "4.2.0"
+  },
+  "peerDependencies": {
+    "zod": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "zod": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@ai-sdk/openai": "^4.0.110",
@@ -28,16 +68,5 @@
     "typescript": "^7.0.2",
     "vitest": "^5.1.0",
     "zod": "^4.6.7"
-  },
-  "peerDependencies": {
-    "zod": "^4.0.0"
-  },
-  "peerDependenciesMeta": {
-    "zod": {
-      "optional": true
-    }
-  },
-  "dependencies": {
-    "postal-mime": "4.2.0"
   }
 }
