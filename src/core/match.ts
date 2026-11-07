@@ -20,15 +20,13 @@ const AMBIGUOUS_PATH = /\/\/|%2f|%5c|\\|%00|%2e/i;
 
 export interface Matcher {
   match(method: string, path: string, query: URLSearchParams): MatchResult;
-  /** True if any operation's path template matches, regardless of method. Used for provider routing. */
-  matchesPath(path: string): boolean;
 }
 
 export function createMatcher(table: OperationTable, opts: { allowedGlobalQueryParams: readonly string[] }): Matcher {
   const compiled = table.operations.map(compileOp);
   const allowedGlobals = new Set(opts.allowedGlobalQueryParams);
 
-  return { match, matchesPath: (path) => compiled.some((c) => c.re.test(path)) };
+  return { match };
 
   function match(method: string, path: string, query: URLSearchParams): MatchResult {
     if (AMBIGUOUS_PATH.test(path)) return { ok: false, status: 400, reason: "ambiguous path encoding" };

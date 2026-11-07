@@ -7,6 +7,8 @@ import type { SessionRef, SessionStore, UserMessage } from "./store.js";
  */
 export interface SessionClaims {
   sid: string;
+  /** Provider id this token is for. The gateway routes by it, so paths may collide across providers. */
+  provider: string;
   agent: string;
   onBehalfOf: string;
   /** Task the session was minted for. Set by the trusted launcher, not the agent. */
@@ -16,6 +18,13 @@ export interface SessionClaims {
 }
 
 export interface MintInput {
+  /** Provider id this token is for, e.g. `gmail`. One token per provider. */
+  provider: string;
+  /**
+   * Reuse an existing session id, e.g. to issue a second provider's token for the same session
+   * so both share one store entry (user messages). Default: a new id.
+   */
+  sid?: string;
   agent: string;
   onBehalfOf: string;
   intent?: string;
@@ -64,7 +73,8 @@ export function createSessions(opts: {
     async mint(input) {
       const iat = Math.floor(now() / 1000);
       const claims: SessionClaims = {
-        sid: crypto.randomUUID(),
+        sid: input.sid ?? crypto.randomUUID(),
+        provider: input.provider,
         agent: input.agent,
         onBehalfOf: input.onBehalfOf,
         ...(input.intent ? { intent: input.intent } : {}),
@@ -89,7 +99,7 @@ export function createSessions(opts: {
       } catch {
         return { error: "malformed" };
       }
-      if (typeof claims.exp !== "number") return { error: "malformed" };
+      if (typeof claims.exp !== "number" || typeof claims.provider !== "string") return { error: "malformed" };
       if (claims.exp * 1000 <= now()) return { error: "expired" };
       return { claims };
     },

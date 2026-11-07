@@ -46,7 +46,7 @@ const call = (id: string, to: string, body: string) => ({
 
 describe("AI SDK tools through the gateway", () => {
   it("allowed calls succeed, denied calls come back to the model as tool errors", async () => {
-    const { token } = await sessions.mint({ agent: "assistant", onBehalfOf: SELF });
+    const { token } = await sessions.mint({ provider: "gmail", agent: "assistant", onBehalfOf: SELF });
     const oauth = new auth.OAuth2();
     oauth.setCredentials({ access_token: token });
     const api = gmail({ version: "v1", auth: oauth, rootUrl });

@@ -17,8 +17,6 @@ export interface GatewayOptions<P extends readonly ProviderDefinition[]> {
   check?: Check<RequestOf<P>>;
   /** Per-check timeout. Default 60s. */
   checkTimeoutMs?: number;
-  /** Route prefix: `/p/<provider>/<upstream path>`. Default `/p`. */
-  basePath?: string;
   maxBodyBytes?: number;
   /** Override for tests. */
   upstreamFetch?: typeof fetch;
@@ -34,9 +32,11 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
   opts: GatewayOptions<P>,
 ) {
   const policy = Array.isArray(opts.policy) ? definePolicy(opts.policy) : opts.policy;
-  const basePath = (opts.basePath ?? "/p").replace(/\/$/, "");
   const maxBody = opts.maxBodyBytes ?? 10 * 1024 * 1024;
   const upstreamFetch = opts.upstreamFetch ?? fetch;
+  const ids = opts.providers.map((p) => p.id);
+  const dup = ids.find((id, i) => ids.indexOf(id) !== i);
+  if (dup) throw new Error(`provider "${dup}" is configured twice`);
   const providers = new Map(
     opts.providers.map((p) => [
       p.id,
@@ -48,49 +48,29 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
     ]),
   );
 
-  /**
-   * Two routing modes:
-   *  - prefix: `/p/gmail/gmail/v1/...` (SDKs that keep base-URL paths)
-   *  - bare:   `/gmail/v1/...` — provider whose generated table matches the path.
-   *    Needed for googleapis, which keeps only the origin of `rootUrl`.
-   *    Ambiguous matches across providers are refused.
-   */
-  type Entry = NonNullable<ReturnType<typeof providers.get>>;
-  function resolveProvider(pathname: string): { entry: Entry; upstreamPath: string } | { status: 400 | 404; error: string } {
-    const m = pathname.match(new RegExp(`^${escapeRe(basePath)}/([^/]+)(/.*)$`));
-    const prefixed = m ? providers.get(m[1]!) : undefined;
-    if (m && prefixed) return { entry: prefixed, upstreamPath: m[2]! };
-
-    const hits = [...providers.values()].filter((p) => p.matcher.matchesPath(pathname));
-    if (hits.length === 1) return { entry: hits[0]!, upstreamPath: pathname };
-    if (hits.length > 1) return { status: 400, error: `path matches several providers: ${hits.map((h) => h.def.id).join(", ")}` };
-    return { status: 404, error: "no provider matches this path" };
-  }
-
   async function handle(req: Request): Promise<Response> {
     const url = new URL(req.url);
     const method = req.method.toUpperCase();
-    // 1. Route to provider. Upstream host is fixed by config; the harness only picks which provider.
-    const route = resolveProvider(url.pathname);
-    if ("error" in route) return fail(route.status, "not_found", route.error);
-    const { entry, upstreamPath } = route;
-
-    // 2. Authenticate the session token.
+    // 1. Authenticate. The signed token names the provider; the agent can't pick another.
     const auth = await authenticate(req, opts.sessions);
     if ("error" in auth) {
       return fail(401, "unauthenticated", "missing or invalid session token");
     }
     const session = auth.claims;
+    const entry = providers.get(session.provider);
+    if (!entry) return fail(403, "unknown_provider", `this gateway has no provider "${session.provider}"`);
+    // The upstream host is fixed by config; the path is forwarded as-is.
+    const upstreamPath = url.pathname;
 
     const override = METHOD_OVERRIDE_HEADERS.find((h) => req.headers.has(h));
     if (override) return fail(400, "bad_request", `header ${override} not allowed`);
 
-    // 3. Match against the generated operation table.
+    // 2. Match against the generated operation table.
     const matched: MatchResult = entry.matcher.match(method, upstreamPath, url.searchParams);
     if (!matched.ok) return fail(matched.status, "policy_denied", matched.reason);
     const { op } = matched;
 
-    // 4. Read body once: decode it for policy, forward the same bytes.
+    // 3. Read body once: decode it for policy, forward the same bytes.
     const body = await readBody(req, maxBody);
     if (body === "too_large") return fail(413, "bad_request", "body too large");
 
@@ -119,7 +99,7 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
       session,
     } satisfies AnyRequest as RequestOf<P>;
 
-    // 5. Policy.
+    // 4. Policy.
     const decision: Decision = await evaluatePolicy(policy, policyReq, {
       ...(opts.check
         ? { check: (input: Parameters<NonNullable<typeof opts.check>>[0]) => opts.check!({ ...input, ...(opts.sessions.store ? { store: opts.sessions.store } : {}) }) }
@@ -130,7 +110,7 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
       return deny(op.action, decision.rules, decision.reason);
     }
 
-    // 6. Forward with the real credential.
+    // 5. Forward with the real credential.
     const headers = new Headers();
     for (const h of FORWARD_REQUEST_HEADERS) {
       const v = req.headers.get(h);
@@ -201,10 +181,6 @@ function deny(action: string, rules: string[], reason: string): Response {
 
 function fail(status: number, code: string, message: string, action?: string, rules?: string[]): Response {
   return Response.json({ error: { code, message, ...(action ? { action } : {}), ...(rules?.length ? { rules } : {}) } }, { status });
-}
-
-function escapeRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /** action -> ["<provider>:<group>", ...] from the provider's withGroups registrations. */

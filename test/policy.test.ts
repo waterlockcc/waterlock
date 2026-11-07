@@ -11,7 +11,7 @@ const req: AnyRequest = {
   groups: ["gmail:read"],
   params: {},
   context: { text: "hello" },
-  session: { sid: "s", agent: "a", onBehalfOf: "u", iat: 0, exp: 0 },
+  session: { sid: "s", provider: "gmail", agent: "a", onBehalfOf: "u", iat: 0, exp: 0 },
 };
 
 type Model = ReturnType<typeof mockCheckModel>;

@@ -41,7 +41,7 @@ describe("memoryStore", () => {
     await store.addUserMessage({ session: a, message: { text: "two" } });
     await store.addUserMessage({ session: a, message: { text: "three", at: new Date(0) } });
     await store.addUserMessage({ session: { sid: "b" }, message: { text: "other" } });
-    const claims = { sid: "a", agent: "x", onBehalfOf: "u", iat: 0, exp: 0 };
+    const claims = { sid: "a", provider: "gmail", agent: "x", onBehalfOf: "u", iat: 0, exp: 0 };
     const all = (await store.getUserMessages({ session: claims })).items;
     expect(all.map((m) => m.text)).toEqual(["two", "three"]);
     expect(all[0]!.at).toBeInstanceOf(Date);           // stamped when not given
@@ -53,8 +53,8 @@ describe("memoryStore", () => {
 describe("gateway + store", () => {
   it("check gets the store; checkPrompt reads this session's messages by the verified token", async () => {
     const { sessions, gateway, prompts } = setup(memoryStore());
-    const a = await sessions.mint({ agent: "assistant", onBehalfOf: SELF });
-    const b = await sessions.mint({ agent: "assistant", onBehalfOf: SELF });
+    const a = await sessions.mint({ provider: "gmail", agent: "assistant", onBehalfOf: SELF });
+    const b = await sessions.mint({ provider: "gmail", agent: "assistant", onBehalfOf: SELF });
     await sessions.addUserMessage({ session: a.claims, message: { text: "Email me a reminder to buy milk" } });
     await sessions.addUserMessage({ session: b.claims, message: { text: "something else entirely" } });
 
@@ -66,7 +66,7 @@ describe("gateway + store", () => {
 
   it("no store: no user messages in the prompt, and addUserMessage refuses", async () => {
     const { sessions, gateway, prompts } = setup();
-    const { token, claims } = await sessions.mint({ agent: "assistant", onBehalfOf: SELF });
+    const { token, claims } = await sessions.mint({ provider: "gmail", agent: "assistant", onBehalfOf: SELF });
     await expect(sessions.addUserMessage({ session: claims, message: { text: "hi" } })).rejects.toThrow(
       /does not support addUserMessage/,
     );
@@ -79,7 +79,7 @@ describe("gateway + store", () => {
     let reads = 0;
     const store: SessionStore = { getUserMessages: async () => (reads++, { items: [{ text: "hi" }] }) };
     const { sessions, gateway } = setup(store);
-    const { token } = await sessions.mint({ agent: "assistant", onBehalfOf: SELF });
+    const { token } = await sessions.mint({ provider: "gmail", agent: "assistant", onBehalfOf: SELF });
     expect((await gateway.fetch(sendRequest(token, "bob@acme.com"))).status).toBe(403); // static deny, no check
     expect(reads).toBe(0);
     expect((await gateway.fetch(sendRequest(token))).status).toBe(200);
@@ -89,7 +89,7 @@ describe("gateway + store", () => {
   it("a failing store denies", async () => {
     const store: SessionStore = { getUserMessages: async () => { throw new Error("db down"); } };
     const { sessions, gateway } = setup(store);
-    const { token } = await sessions.mint({ agent: "assistant", onBehalfOf: SELF });
+    const { token } = await sessions.mint({ provider: "gmail", agent: "assistant", onBehalfOf: SELF });
     const res = await gateway.fetch(sendRequest(token));
     expect(res.status).toBe(403);
     expect(((await res.json()) as { error: { message: string } }).error.message).toMatch(/db down/);
@@ -97,7 +97,7 @@ describe("gateway + store", () => {
 });
 
 describe("checkPrompt with a store", () => {
-  const session = { sid: "s", agent: "a", onBehalfOf: "u", iat: 0, exp: 0 };
+  const session = { sid: "s", provider: "gmail", agent: "a", onBehalfOf: "u", iat: 0, exp: 0 };
   const req = { provider: "gmail", action: "gmail.users.messages.send", groups: [], params: {}, context: { text: "hi" }, session };
 
   it("adds a user_messages block only when the store has messages, capped by maxUserMessages", async () => {
@@ -116,12 +116,12 @@ describe("checkPrompt with a store", () => {
 describe("sessions.verify", () => {
   it("says why a token was rejected", async () => {
     const sessions = createSessions({ signingKey: KEY });
-    const { token, claims } = await sessions.mint({ agent: "a", onBehalfOf: "u" });
+    const { token, claims } = await sessions.mint({ provider: "gmail", agent: "a", onBehalfOf: "u" });
     expect(await sessions.verify({ token })).toEqual({ claims });
     expect(await sessions.verify({ token: "nope" })).toEqual({ error: "malformed" });
     expect(await sessions.verify({ token: token.slice(0, -4) + "AAAA" })).toEqual({ error: "bad_signature" });
     const past = createSessions({ signingKey: KEY, now: () => Date.now() - 3_600_000 });
-    const old = await past.mint({ agent: "a", onBehalfOf: "u", ttlSeconds: 60 });
+    const old = await past.mint({ provider: "gmail", agent: "a", onBehalfOf: "u", ttlSeconds: 60 });
     expect(await sessions.verify({ token: old.token })).toEqual({ error: "expired" });
   });
 });

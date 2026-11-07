@@ -17,7 +17,7 @@ const setup = () => {
         groups: ["gmail:send"],
         params: { userId: "me" },
         context: decodeMessageSend(new TextEncoder().encode(JSON.stringify({ raw: Buffer.from(mime).toString("base64url") }))),
-        session: { sid: "s", agent: "a", onBehalfOf: SELF, iat: 0, exp: 0 },
+        session: { sid: "s", provider: "gmail", agent: "a", onBehalfOf: SELF, iat: 0, exp: 0 },
       } satisfies GmailRequest,
       { check: modelCheck(model) },
     );

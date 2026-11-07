@@ -50,7 +50,7 @@ describe("withGroups", () => {
       sessions,
       upstreamFetch: async () => Response.json({}),
     });
-    const { token } = await sessions.mint({ agent: "a", onBehalfOf: "u" });
+    const { token } = await sessions.mint({ provider: "gmail", agent: "a", onBehalfOf: "u" });
     const call = (path: string, init: RequestInit = {}) =>
       gateway.fetch(new Request(`http://gw${path}`, { ...init, headers: { authorization: `Bearer ${token}`, ...init.headers } }));
 

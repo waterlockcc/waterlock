@@ -62,7 +62,7 @@ const gateway = createGateway({
 
 // Stand-in for the trusted front door: mint a session, record what the human said,
 // then hand the harness its token + the same prompt via a file.
-const { token, claims } = await sessions.mint({ agent: "assistant", onBehalfOf: SELF, ttlSeconds: 3600 });
+const { token, claims } = await sessions.mint({ provider: "gmail", agent: "assistant", onBehalfOf: SELF, ttlSeconds: 3600 });
 await sessions.addUserMessage({ session: claims, message: { text: USER_PROMPT } });
 await writeFile(SESSION_FILE, JSON.stringify({ token, prompt: USER_PROMPT }));
 
