@@ -1,0 +1,36 @@
+x-build: &build
+  context: ../..
+  dockerfile: examples/ai-sdk-send-email/Dockerfile
+
+services:
+  gateway:
+    build: *build
+    working_dir: /app/examples/ai-sdk-send-email/gateway
+    command: ["/app/node_modules/.bin/tsx", "index.ts"]
+    environment:
+      HOST: 0.0.0.0
+      SESSION_FILE: /shared/session
+      # The no-billing-info check calls Claude from the gateway.
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:?put CLAUDE_CODE_OAUTH_TOKEN=... in harness/.env and run with --env-file harness/.env}
+    volumes: [session:/shared]
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(8787, '127.0.0.1').on('connect', () => process.exit(0)).on('error', () => process.exit(1))"]
+      interval: 1s
+      retries: 30
+
+  harness:
+    build: *build
+    working_dir: /app/examples/ai-sdk-send-email/harness
+    command: ["/app/node_modules/.bin/tsx", "index.ts"]
+    environment:
+      GATEWAY_URL: http://gateway:8787/
+      SESSION_FILE: /shared/session
+      # From `claude setup-token`, in harness/.env (pass with --env-file harness/.env)
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:?put CLAUDE_CODE_OAUTH_TOKEN=... in harness/.env and run with --env-file harness/.env}
+    volumes: [session:/shared:ro]
+    depends_on:
+      gateway:
+        condition: service_healthy
+
+volumes:
+  session:

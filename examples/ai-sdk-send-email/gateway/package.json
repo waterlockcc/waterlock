@@ -1,0 +1,6 @@
+{
+  "name": "ai-sdk-send-email-gateway",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "tsx watch index.ts" }
+}
