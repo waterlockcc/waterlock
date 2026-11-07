@@ -23,8 +23,8 @@ function setup(store?: SessionStore) {
   const gateway = createGateway({
     providers: [gmail({ credentials: staticToken({ token: "real" }) })],
     policy: [
-      { rule: (r) => r.action === "gmail.users.messages.send" && r.context.recipients.every((a) => a === r.session.onBehalfOf) },
-      { rule: (r) => r.action === "gmail.users.messages.send" && r.check("not what the user asked"), action: "deny" },
+      { when: (r) => r.action === "gmail.users.messages.send" && r.context.recipients.every((a) => a === r.session.onBehalfOf) },
+      { when: "not what the user asked", action: "deny" },
     ],
     sessions,
     check,

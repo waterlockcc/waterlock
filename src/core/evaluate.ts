@@ -2,7 +2,7 @@ import type { AnyRequest, Policy, PolicyRule, RuleInput } from "./policy.js";
 import type { SessionStore } from "./store.js";
 
 /**
- * Answers one `r.check("...")` condition. You write it: call the AI SDK (or anything)
+ * Answers one natural-language `when` condition. You write it: call the AI SDK (or anything)
  * however you like. Helpers for the prompt and output schema live in `@waterlock/gateway/checks`.
  */
 export type Check<R extends AnyRequest = AnyRequest> = (input: {
@@ -13,6 +13,8 @@ export type Check<R extends AnyRequest = AnyRequest> = (input: {
    * for `request.session`. `checkPrompt` does this for you.
    */
   store?: SessionStore;
+  /** Aborted once the decision is made elsewhere. Pass it on, e.g. `generateText({ abortSignal: signal })`. */
+  signal: AbortSignal;
 }) => Promise<{ result: boolean; explanation?: string }>;
 
 export interface CheckOptions<R extends AnyRequest = AnyRequest> {
@@ -33,144 +35,129 @@ export interface Decision {
   /** Rules that decided the outcome, as `#<index>`. */
   rules: string[];
   reason: string;
-  /** Dynamic checks that ran, for audit. */
+  /** Natural-language checks that finished, for audit. */
   checks: CheckRecord[];
 }
 
-/** Thrown by `r.check()` when the answer isn't known yet. The rule is re-run once it is. */
-class PendingCheck {
-  constructor(readonly condition: string) {}
-}
-
-type RunResult = { value: boolean; used: string[] } | { pending: string } | { error: string };
-
-const MAX_ROUNDS = 8;
-
 /**
- * Rules are sync and pure, so `r.check()` suspends: the first unanswered check in a
- * rule throws PendingCheck, the engine resolves all pending checks in parallel, then
- * re-runs. Static guards (`r.action === ... && r.check(...)`) short-circuit, so checks
- * only run where they can change the outcome. Any error, timeout or malformed result denies.
+ * 1. Function rules run (sync). Any error or non-boolean denies.
+ * 2. A function deny rule matched       -> deny (its reason). No checks run.
+ * 3. No allow rule matched              -> deny (allow-rule reasons as hints). No checks run.
+ * 4. No natural-language rules          -> allow.
+ * 5. Natural-language deny rules run in parallel. The first `true` denies and aborts the rest;
+ *    all `false` allows. Errors, timeouts and malformed answers deny.
  */
 export async function evaluatePolicy<R extends AnyRequest>(
   policy: Policy<R>,
   req: R,
   opts: CheckOptions<R> = {},
 ): Promise<Decision> {
-  const answers = new Map<string, CheckRecord>();
-  const deny = (rules: string[], reason: string): Decision => ({ effect: "deny", rules, reason, checks: [...answers.values()] });
   const rules = policy.rules.map((rule, i) => ({ id: `#${i}`, rule, action: rule.action ?? "allow" }));
+  const deny = (ids: string[], reason: string, checks: CheckRecord[] = []): Decision => ({ effect: "deny", rules: ids, reason, checks });
 
-  for (let round = 0; round < MAX_ROUNDS; round++) {
-    const results = rules.map((r) => ({ ...r, result: run(r.rule, req, answers) }));
-
-    const failed = results.find((r) => "error" in r.result);
-    if (failed) return deny([failed.id], `rule ${failed.id} ${(failed.result as { error: string }).error}`);
-
-    const matched = (action: string) => results.filter((r) => r.action === action && "value" in r.result && r.result.value);
-    const pending = (action: string) => results.filter((r) => r.action === action && "pending" in r.result);
-
-    const denied = matched("deny");
-    if (denied.length) {
-      return deny(
-        denied.map((r) => r.id),
-        reasonFor(denied, answers) ?? `denied by ${denied.map((r) => r.id).join(", ")}`,
-      );
+  const input = ruleInput(req);
+  const matched: typeof rules = [];
+  for (const r of rules) {
+    if (typeof r.rule.when !== "function") continue;
+    let value: unknown;
+    try {
+      value = r.rule.when(input);
+    } catch (err) {
+      return deny([r.id], `rule ${r.id} threw: ${err instanceof Error ? err.message : String(err)}`);
     }
-
-    const allowed = matched("allow");
-    const pendingAllow = pending("allow");
-    const pendingDeny = pending("deny");
-
-    // Nothing can allow: deny without spending checks on deny rules.
-    if (!allowed.length && !pendingAllow.length) {
-      const hints = rules.filter((r) => r.action === "allow" && r.rule.reason).map((r) => r.rule.reason!);
-      return deny([], hints.length ? hints.join(" ") : "no allow rule matched");
-    }
-    if (allowed.length && !pendingDeny.length) {
-      return { effect: "allow", rules: allowed.map((r) => r.id), reason: `allowed by ${allowed.map((r) => r.id).join(", ")}`, checks: [...answers.values()] };
-    }
-
-    // Resolve only checks that can still change the outcome.
-    const needed = [...pendingDeny, ...(allowed.length ? [] : pendingAllow)];
-    const conditions = [...new Set(needed.map((r) => (r.result as { pending: string }).pending))];
-    const err = await resolve(conditions, req, answers, opts);
-    if (err) return deny([], err);
+    if (typeof value !== "boolean") return deny([r.id], `rule ${r.id} returned ${describe(value)}, expected boolean`);
+    if (value) matched.push(r);
   }
-  return deny([], `policy needed more than ${MAX_ROUNDS} rounds of checks`);
+
+  const staticDeny = matched.find((r) => r.action === "deny");
+  if (staticDeny) return deny([staticDeny.id], staticDeny.rule.reason ?? `denied by ${staticDeny.id}`);
+
+  const allowed = matched.filter((r) => r.action === "allow");
+  if (!allowed.length) {
+    const hints = rules.filter((r) => r.action === "allow" && r.rule.reason).map((r) => r.rule.reason!);
+    return deny([], hints.length ? hints.join(" ") : "no allow rule matched");
+  }
+
+  const dynamic = rules.filter((r) => typeof r.rule.when === "string");
+  const allow: Decision = {
+    effect: "allow",
+    rules: allowed.map((r) => r.id),
+    reason: `allowed by ${allowed.map((r) => r.id).join(", ")}`,
+    checks: [],
+  };
+  if (!dynamic.length) return allow;
+
+  return runChecks(dynamic, req, opts, allow);
 }
 
-function run<R extends AnyRequest>(rule: PolicyRule<R>, req: R, answers: Map<string, CheckRecord>): RunResult {
-  const used: string[] = [];
-  const groups = new Set<string>(req.groups);
-  const input = Object.freeze({
-    ...req,
-    in: (g: string) => groups.has(g),
-    check: (condition: string) => {
-      const answer = answers.get(condition);
-      if (!answer) throw new PendingCheck(condition);
-      used.push(condition);
-      return answer.result;
-    },
-  }) as unknown as RuleInput<R>;
-
-  let value: unknown;
-  try {
-    value = rule.rule(input);
-  } catch (err) {
-    if (err instanceof PendingCheck) return { pending: err.condition };
-    return { error: `threw: ${err instanceof Error ? err.message : String(err)}` };
-  }
-  if (typeof value !== "boolean") return { error: `returned ${describe(value)}, expected boolean` };
-  return { value, used };
-}
-
-async function resolve<R extends AnyRequest>(
-  conditions: string[],
+async function runChecks<R extends AnyRequest>(
+  dynamic: { id: string; rule: PolicyRule<R> }[],
   request: R,
-  answers: Map<string, CheckRecord>,
   opts: CheckOptions<R>,
-): Promise<string | null> {
+  allow: Decision,
+): Promise<Decision> {
   const check = opts.check;
-  if (!check) return `rule uses r.check() but the gateway has no check function configured`;
+  if (!check) return { effect: "deny", rules: [], reason: "policy has natural-language rules but the gateway has no check function", checks: [] };
+
   const timeoutMs = opts.checkTimeoutMs ?? 60_000;
-  const results = await Promise.all(
-    conditions.map(async (condition) => {
-      let timer: ReturnType<typeof setTimeout> | undefined;
-      try {
-        const timeout = new Promise<never>((_, reject) => {
-          timer = setTimeout(() => reject(new Error(`timed out after ${timeoutMs}ms`)), timeoutMs);
-        });
-        const out: unknown = await Promise.race([check({ condition, request }), timeout]);
+  const controller = new AbortController();
+  const done: CheckRecord[] = [];
+  const asked = new Map<string, Promise<CheckRecord>>(); // same condition in two rows runs once
+
+  const ask = (condition: string) => {
+    let p = asked.get(condition);
+    if (!p) {
+      p = withTimeout(check({ condition, request, signal: controller.signal }), timeoutMs).then((out) => {
         const o = out as { result?: unknown; explanation?: unknown } | null;
-        if (typeof o?.result !== "boolean") return `check "${condition}" returned a malformed result`;
-        answers.set(condition, {
+        if (typeof o?.result !== "boolean") throw new Error("returned a malformed result");
+        const record: CheckRecord = {
           condition,
           result: o.result,
           ...(typeof o.explanation === "string" ? { explanation: o.explanation } : {}),
-        });
-        return null;
-      } catch (err) {
-        return `check "${condition}" failed: ${err instanceof Error ? err.message : String(err)}`;
-      } finally {
-        clearTimeout(timer);
-      }
-    }),
-  );
-  return results.find((r) => r !== null) ?? null;
+        };
+        done.push(record);
+        return record;
+      });
+      asked.set(condition, p);
+    }
+    return p;
+  };
+
+  return new Promise<Decision>((resolve) => {
+    let remaining = dynamic.length;
+    let settled = false;
+    const settle = (d: Decision) => {
+      if (settled) return;
+      settled = true;
+      controller.abort();
+      resolve({ ...d, checks: [...done] });
+    };
+
+    for (const { id, rule } of dynamic) {
+      const condition = rule.when as string;
+      ask(condition).then(
+        (record) => {
+          if (record.result) settle({ ...allow, effect: "deny", rules: [id], reason: rule.reason ?? record.explanation ?? `denied by ${id}` });
+          else if (--remaining === 0) settle(allow);
+        },
+        (err: unknown) =>
+          settle({ ...allow, effect: "deny", rules: [id], reason: `check "${condition}" failed: ${err instanceof Error ? err.message : String(err)}` }),
+      );
+    }
+  });
 }
 
-/** Rule's own reason, else explanations from the checks it used. */
-function reasonFor(
-  decided: { rule: { reason?: string | undefined }; result: RunResult }[],
-  answers: Map<string, CheckRecord>,
-): string | undefined {
-  const reasons = decided.flatMap((d) => {
-    if (d.rule.reason) return [d.rule.reason];
-    const used = "used" in d.result ? d.result.used : [];
-    return used.flatMap((c) => (answers.get(c)?.explanation ? [answers.get(c)!.explanation!] : []));
+function ruleInput<R extends AnyRequest>(req: R): RuleInput<R> {
+  const groups = new Set<string>(req.groups);
+  return Object.freeze({ ...req, in: (g: string) => groups.has(g) }) as unknown as RuleInput<R>;
+}
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`timed out after ${ms}ms`)), ms);
   });
-  return reasons.length ? reasons.join(" ") : undefined;
+  return Promise.race([p, timeout]).finally(() => clearTimeout(timer));
 }
 
 function describe(v: unknown): string {

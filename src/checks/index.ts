@@ -2,9 +2,10 @@
  * Optional helpers for writing a `check` function with the AI SDK (or any LLM client).
  * The gateway never calls a model itself; you do, with these pieces.
  *
- *   check: async ({ condition, request, store }) => {
+ *   check: async ({ condition, request, store, signal }) => {
  *     const { output } = await generateText({
  *       model,
+ *       abortSignal: signal,
  *       system: checkSystemPrompt,
  *       output: Output.object({ schema: verdictSchema }),
  *       prompt: await checkPrompt({ condition, request, store }),

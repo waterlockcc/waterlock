@@ -35,26 +35,22 @@ const gateway = createGateway({
   // Rules are typed from `providers`: autocomplete on actions, params and decoded context.
   policy: [
     {
-      rule: (r) =>
+      when: (r) =>
         r.action === "gmail.users.messages.send" &&
         r.context.recipients.length > 0 &&
         r.context.recipients.every((addr) => addr === r.session.onBehalfOf),
       reason: "You can only send email to yourself.",
     },
-    {
-      rule: (r) => r.action === "gmail.users.messages.send" && r.check("The email contains billing information"),
-      action: "deny",
-    },
-    {
-      rule: (r) => r.action === "gmail.users.messages.send" && r.check("The user did not ask for this email to be sent"),
-      action: "deny",
-    },
+    // Plain-language rows: answered by `check` below, only once a function row allows. Deny-only.
+    { when: "The email contains billing information", action: "deny" },
+    { when: "The user did not ask for this email to be sent", action: "deny" },
   ],
-  // r.check() handler: our own AI SDK call, using the lib's prompt + schema.
+  // Answers plain-language rows: our own AI SDK call, using the lib's prompt + schema.
   // checkPrompt reads the user messages from the store, keyed by the verified session token.
-  check: async ({ condition, request, store }) => {
+  check: async ({ condition, request, store, signal }) => {
     const { output } = await generateText({
       model: checkModel,
+      abortSignal: signal,
       output: Output.object({ schema: verdictSchema }),
       prompt: await checkPrompt({ condition, request, store }),
     });

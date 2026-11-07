@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { checkPrompt, checkSystemPrompt } from "../src/checks/index.js";
-import { evaluatePolicy } from "../src/core/evaluate.js";
+import { evaluatePolicy, type Check } from "../src/core/evaluate.js";
 import { definePolicy, type AnyRequest, type Policy } from "../src/core/policy.js";
 import type { GmailRequest } from "../src/providers/gmail/index.js";
 import { mockCheckModel, modelCheck } from "./fixtures/mock-check-model.js";
@@ -28,33 +28,33 @@ describe("static rules", () => {
   });
 
   it("action defaults to allow", async () => {
-    expect(await evaluate(definePolicy([{ rule: () => true }]))).toMatchObject({ effect: "allow", rules: ["#0"] });
+    expect(await evaluate(definePolicy([{ when: () => true }]))).toMatchObject({ effect: "allow", rules: ["#0"] });
   });
 
   it("deny beats allow, with its reason", async () => {
-    const p = definePolicy([{ rule: () => true }, { rule: (r) => r.in("gmail:read"), action: "deny", reason: "No reads today." }]);
+    const p = definePolicy([{ when: () => true }, { when: (r) => r.in("gmail:read"), action: "deny", reason: "No reads today." }]);
     expect(await evaluate(p)).toMatchObject({ effect: "deny", rules: ["#1"], reason: "No reads today." });
   });
 
   it("default deny lists allow-rule reasons as hints", async () => {
-    const p = definePolicy([{ rule: (r) => r.in("gmail:send"), reason: "Only sending is allowed." }]);
+    const p = definePolicy([{ when: (r) => r.in("gmail:send"), reason: "Only sending is allowed." }]);
     expect(await evaluate(p)).toMatchObject({ effect: "deny", reason: "Only sending is allowed." });
   });
 
   it("a throwing or non-boolean rule denies", async () => {
-    const boom = definePolicy([{ rule: () => { throw new Error("oops"); } }]);
+    const boom = definePolicy([{ when: () => { throw new Error("oops"); } }]);
     expect(await evaluate(boom)).toMatchObject({ effect: "deny", reason: "rule #0 threw: oops" });
-    const sloppy = definePolicy([{ rule: (r) => (r.context as { x?: { ok: boolean } }).x?.ok as boolean }]);
+    const sloppy = definePolicy([{ when: (r) => (r.context as { x?: { ok: boolean } }).x?.ok as boolean }]);
     expect(await evaluate(sloppy)).toMatchObject({ effect: "deny", reason: "rule #0 returned undefined, expected boolean" });
-    const asyncRule = definePolicy([{ rule: (async () => true) as unknown as () => boolean }]);
+    const asyncRule = definePolicy([{ when: (async () => true) as unknown as () => boolean }]);
     expect(await evaluate(asyncRule)).toMatchObject({ effect: "deny", reason: expect.stringContaining("Promise") });
   });
 });
 
-describe("r.check()", () => {
-  it("a matching check denies, explanation becomes the reason", async () => {
+describe("plain-language rows", () => {
+  it("a matching condition denies; the check's explanation becomes the reason", async () => {
     const { model, calls } = counting(true, "Mentions an invoice.");
-    const p = definePolicy([{ rule: () => true }, { rule: (r) => r.check("contains billing info"), action: "deny" }]);
+    const p = definePolicy([{ when: () => true }, { when: "contains billing info", action: "deny" }]);
     expect(await evaluate(p, model)).toMatchObject({
       effect: "deny",
       rules: ["#1"],
@@ -64,43 +64,45 @@ describe("r.check()", () => {
     expect(calls).toEqual(["contains billing info"]);
   });
 
-  it("rule reason wins over the check explanation", async () => {
+  it("row reason wins over the check explanation", async () => {
     const { model } = counting(true, "Mentions an invoice.");
-    const p = definePolicy([{ rule: () => true }, { rule: (r) => r.check("billing"), action: "deny", reason: "No billing." }]);
+    const p = definePolicy([{ when: () => true }, { when: "billing", action: "deny", reason: "No billing." }]);
     expect(await evaluate(p, model)).toMatchObject({ reason: "No billing." });
   });
 
-  it("static guards short-circuit checks", async () => {
+  it("no checks run when nothing allows, or a function row already denies", async () => {
     const { model, calls } = counting(true);
-    const p = definePolicy([{ rule: () => true }, { rule: (r) => r.in("gmail:send") && r.check("billing"), action: "deny" }]);
-    expect(await evaluate(p, model)).toMatchObject({ effect: "allow" });
+    expect(await evaluate(definePolicy([{ when: () => false }, { when: "billing", action: "deny" }]), model)).toMatchObject({
+      effect: "deny",
+      reason: "no allow rule matched",
+    });
+    const staticDeny = definePolicy([{ when: () => true }, { when: () => true, action: "deny", reason: "nope" }, { when: "billing", action: "deny" }]);
+    expect(await evaluate(staticDeny, model)).toMatchObject({ effect: "deny", reason: "nope" });
     expect(calls).toEqual([]);
   });
 
-  it("skips deny checks when nothing can allow", async () => {
-    const { model, calls } = counting(true);
-    const p = definePolicy([{ rule: () => false }, { rule: (r) => r.check("billing"), action: "deny" }]);
-    expect(await evaluate(p, model)).toMatchObject({ effect: "deny", reason: "no allow rule matched" });
-    expect(calls).toEqual([]);
+  it("all conditions false allows; a repeated condition runs once", async () => {
+    const { model, calls } = counting(false);
+    const p = definePolicy([{ when: () => true }, { when: "a", action: "deny" }, { when: "a", action: "deny" }, { when: "b", action: "deny" }]);
+    expect(await evaluate(p, model)).toMatchObject({ effect: "allow", rules: ["#0"] });
+    expect(calls.sort()).toEqual(["a", "b"]);
   });
 
-  it("checks can allow, and repeated conditions run once", async () => {
-    const { model, calls } = counting(true);
-    const p = definePolicy([{ rule: (r) => r.check("is a reminder") }, { rule: (r) => r.check("is a reminder") && r.in("gmail:read") }]);
-    expect(await evaluate(p, model)).toMatchObject({ effect: "allow" });
-    expect(calls).toEqual(["is a reminder"]);
-  });
-
-  it("several checks in one rule resolve in rounds", async () => {
-    const { model, calls } = counting(true);
-    const p = definePolicy([{ rule: (r) => r.check("a") && r.check("b") }]);
-    expect(await evaluate(p, model)).toMatchObject({ effect: "allow" });
-    expect(calls).toEqual(["a", "b"]);
+  it("runs conditions in parallel; the first true denies and aborts the rest", async () => {
+    let slowSignal: AbortSignal | undefined;
+    const check: Check = ({ condition, signal }) => {
+      if (condition === "fast") return Promise.resolve({ result: true, explanation: "fast said yes" });
+      slowSignal = signal;
+      return new Promise(() => {}); // would hang forever
+    };
+    const p = definePolicy([{ when: () => true }, { when: "slow", action: "deny" }, { when: "fast", action: "deny" }]);
+    expect(await evaluatePolicy(p, req, { check })).toMatchObject({ effect: "deny", rules: ["#2"], reason: "fast said yes" });
+    expect(slowSignal?.aborted).toBe(true);
   });
 
   it("fails closed: no check function, throw, timeout, malformed", async () => {
-    const p = definePolicy([{ rule: () => true }, { rule: (r) => r.check("billing"), action: "deny" }]);
-    expect(await evaluate(p)).toMatchObject({ effect: "deny", reason: expect.stringContaining("no check function configured") });
+    const p = definePolicy([{ when: () => true }, { when: "billing", action: "deny" }]);
+    expect(await evaluate(p)).toMatchObject({ effect: "deny", reason: expect.stringContaining("no check function") });
     expect(await evaluate(p, mockCheckModel({ fail: "throw" }))).toMatchObject({
       effect: "deny",
       reason: expect.stringContaining('check "billing" failed:'),
@@ -126,7 +128,11 @@ describe("check helpers", () => {
 
   it("an AI SDK check built from them returns the model's verdict", async () => {
     const model = mockCheckModel();
-    const verdict = await modelCheck(model)({ condition: "contains billing", request: { ...req, context: { text: "billing" } } });
+    const verdict = await modelCheck(model)({
+      condition: "contains billing",
+      request: { ...req, context: { text: "billing" } },
+      signal: new AbortController().signal,
+    });
     expect(verdict).toEqual({ result: true, explanation: "The email mentions billing." });
     expect(model.conditions).toEqual(["contains billing"]);
     expect(JSON.stringify(model.doGenerateCalls[0]!.prompt)).toContain("You evaluate policy conditions");
@@ -136,14 +142,18 @@ describe("check helpers", () => {
 // Compile-time checks: these lines must fail typecheck. `pnpm typecheck` covers them.
 definePolicy<GmailRequest>([
   // @ts-expect-error typo in group name
-  { rule: (r) => r.in("gmail:raed") },
+  { when: (r) => r.in("gmail:raed") },
   // @ts-expect-error recipient_domains is string[] | null until narrowed to messages.send
-  { rule: (r) => r.in("gmail:send") && r.context.recipient_domains.every((d) => d === "acme.com") },
+  { when: (r) => r.in("gmail:send") && r.context.recipient_domains.every((d) => d === "acme.com") },
   // @ts-expect-error maxResults only exists on list actions
-  { rule: (r) => r.params.maxResults > 10 },
-  { rule: (r) => r.action === "gmail.users.messages.send" && r.context.recipient_domains.every((d) => d === "acme.com") },
+  { when: (r) => r.params.maxResults > 10 },
+  { when: (r) => r.action === "gmail.users.messages.send" && r.context.recipient_domains.every((d) => d === "acme.com") },
   // @ts-expect-error action must be allow or deny
-  { rule: () => true, action: "approve" },
+  { when: () => true, action: "approve" },
+  // @ts-expect-error plain-language rows are deny-only
+  { when: "the user asked for this", action: "allow" },
+  // @ts-expect-error plain-language rows must say action: "deny"
+  { when: "billing info" },
 ]);
 
 // Gateway must get a policy covering every provider's requests.
@@ -151,7 +161,7 @@ import { createGateway, createSessions, staticToken, type ProviderDefinition, ty
 import { gmail } from "../src/providers/gmail/index.js";
 function _gatewayTypes() {
   const sessions = createSessions({ signingKey: "x".repeat(32) });
-  const gmailOnly = definePolicy<GmailRequest>([{ rule: (r) => r.in("gmail:read") }]);
+  const gmailOnly = definePolicy<GmailRequest>([{ when: (r) => r.in("gmail:read") }]);
   const other = {} as ProviderDefinition<ProviderRequest<"other", "other.thing.do", "other:write">>;
   createGateway({ providers: [gmail({ credentials: staticToken({ token: "t" }) })], policy: gmailOnly, sessions });
   // @ts-expect-error Gmail-only policy can't govern a gateway that also serves "other"
@@ -160,9 +170,9 @@ function _gatewayTypes() {
   createGateway({
     providers: [gmail({ credentials: staticToken({ token: "t" }) }), other],
     policy: [
-      { rule: (r) => r.in("gmail:read") || r.action === "other.thing.do" },
+      { when: (r) => r.in("gmail:read") || r.action === "other.thing.do" },
       // @ts-expect-error typo in group name still caught inline
-      { rule: (r) => r.in("gmail:raed") },
+      { when: (r) => r.in("gmail:raed") },
     ],
     sessions,
   });

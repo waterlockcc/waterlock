@@ -17,7 +17,7 @@ export interface DecisionEvent {
   effect: Decision["effect"] | "error";
   rules: string[];
   reason?: string;
-  /** Dynamic checks (r.check) that ran for this request. */
+  /** Plain-language checks that ran for this request. */
   checks?: CheckRecord[];
   upstreamStatus?: number;
 }
@@ -30,7 +30,7 @@ export interface GatewayOptions<P extends readonly ProviderDefinition[]> {
    */
   policy: Policy<RequestOf<P>> | PolicyRule<RequestOf<P>>[];
   sessions: Sessions;
-  /** Answers `r.check("...")`, e.g. with your own AI SDK call. Absent = rules using checks deny. */
+  /** Answers plain-language `when` rows, e.g. with your own AI SDK call. Absent = those rows deny. */
   check?: Check<RequestOf<P>>;
   /** Per-check timeout. Default 60s. */
   checkTimeoutMs?: number;

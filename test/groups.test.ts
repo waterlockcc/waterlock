@@ -46,7 +46,7 @@ describe("withGroups", () => {
     const provider = gmail({ credentials }).withGroups({ risky: ["gmail.users.messages.send"] });
     const gateway = createGateway({
       providers: [provider],
-      policy: [{ rule: (r) => !r.in("gmail:risky") }],
+      policy: [{ when: (r) => !r.in("gmail:risky") }],
       sessions,
       upstreamFetch: async () => Response.json({}),
     });
@@ -79,9 +79,9 @@ function _types() {
   const provider = gmail({ credentials }).withGroups({ risky: ["gmail.users.messages.send"] });
   type Req = RequestOf<[typeof provider]>;
   definePolicy<Req>([
-    { rule: (r) => r.in("gmail:risky") || r.in("gmail:read") }, // custom + default groups autocomplete
+    { when: (r) => r.in("gmail:risky") || r.in("gmail:read") }, // custom + default groups autocomplete
     // @ts-expect-error unknown group
-    { rule: (r) => r.in("gmail:riskyy") },
+    { when: (r) => r.in("gmail:riskyy") },
   ]);
   // @ts-expect-error typo in action name
   gmail({ credentials }).withGroups({ bad: ["gmail.users.mesages.send"] });
