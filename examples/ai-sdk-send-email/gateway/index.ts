@@ -58,7 +58,6 @@ const gateway = createGateway({
   },
   sessions,
   ...(GMAIL_TOKEN ? {} : { upstreamFetch: async () => Response.json({ id: "fake-msg-1" }) }),
-  onDecision: (e) => console.log(e.effect.toUpperCase().padEnd(6), e.action, e.reason ?? ""),
 });
 
 // Stand-in for the trusted front door: mint a session, record what the human said,

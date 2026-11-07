@@ -23,11 +23,7 @@ export interface CheckOptions<R extends AnyRequest = AnyRequest> {
   checkTimeoutMs?: number;
 }
 
-export interface CheckRecord {
-  condition: string;
-  result: boolean;
-  explanation?: string;
-}
+type Verdict = { result: boolean; explanation?: string };
 
 export interface Decision {
   /** May gain members later (e.g. "approve"): treat unknown values as deny. */
@@ -35,15 +31,13 @@ export interface Decision {
   /** Rules that decided the outcome, as `#<index>`. */
   rules: string[];
   reason: string;
-  /** Natural-language checks that finished, for audit. */
-  checks: CheckRecord[];
 }
 
 /**
  * 1. Function rules run (sync). Any error or non-boolean denies.
  * 2. A function deny rule matched       -> deny (its reason). No checks run.
  * 3. No allow rule matched              -> deny (allow-rule reasons as hints). No checks run.
- * 4. No natural-language rules          -> allow.
+ * 4. Policy has no natural-language rows -> allow (nothing left to ask a model).
  * 5. Natural-language deny rules run in parallel. The first `true` denies and aborts the rest;
  *    all `false` allows. Errors, timeouts and malformed answers deny.
  */
@@ -53,7 +47,7 @@ export async function evaluatePolicy<R extends AnyRequest>(
   opts: CheckOptions<R> = {},
 ): Promise<Decision> {
   const rules = policy.rules.map((rule, i) => ({ id: `#${i}`, rule, action: rule.action ?? "allow" }));
-  const deny = (ids: string[], reason: string, checks: CheckRecord[] = []): Decision => ({ effect: "deny", rules: ids, reason, checks });
+  const deny = (ids: string[], reason: string): Decision => ({ effect: "deny", rules: ids, reason });
 
   const input = ruleInput(req);
   const matched: typeof rules = [];
@@ -83,7 +77,6 @@ export async function evaluatePolicy<R extends AnyRequest>(
     effect: "allow",
     rules: allowed.map((r) => r.id),
     reason: `allowed by ${allowed.map((r) => r.id).join(", ")}`,
-    checks: [],
   };
   if (!dynamic.length) return allow;
 
@@ -97,12 +90,11 @@ async function runChecks<R extends AnyRequest>(
   allow: Decision,
 ): Promise<Decision> {
   const check = opts.check;
-  if (!check) return { effect: "deny", rules: [], reason: "policy has natural-language rules but the gateway has no check function", checks: [] };
+  if (!check) return { effect: "deny", rules: [], reason: "policy has natural-language rules but the gateway has no check function" };
 
   const timeoutMs = opts.checkTimeoutMs ?? 60_000;
   const controller = new AbortController();
-  const done: CheckRecord[] = [];
-  const asked = new Map<string, Promise<CheckRecord>>(); // same condition in two rows runs once
+  const asked = new Map<string, Promise<Verdict>>(); // same condition in two rows runs once
 
   const ask = (condition: string) => {
     let p = asked.get(condition);
@@ -110,13 +102,7 @@ async function runChecks<R extends AnyRequest>(
       p = withTimeout(check({ condition, request, signal: controller.signal }), timeoutMs).then((out) => {
         const o = out as { result?: unknown; explanation?: unknown } | null;
         if (typeof o?.result !== "boolean") throw new Error("returned a malformed result");
-        const record: CheckRecord = {
-          condition,
-          result: o.result,
-          ...(typeof o.explanation === "string" ? { explanation: o.explanation } : {}),
-        };
-        done.push(record);
-        return record;
+        return { result: o.result, ...(typeof o.explanation === "string" ? { explanation: o.explanation } : {}) } as Verdict;
       });
       asked.set(condition, p);
     }
@@ -130,7 +116,7 @@ async function runChecks<R extends AnyRequest>(
       if (settled) return;
       settled = true;
       controller.abort();
-      resolve({ ...d, checks: [...done] });
+      resolve(d);
     };
 
     for (const { id, rule } of dynamic) {

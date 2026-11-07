@@ -3,7 +3,7 @@ import { serve, type ServerType } from "@hono/node-server";
 import { auth, gmail } from "@googleapis/gmail";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { policy } from "./fixtures/gmail-policy.js";
-import { createGateway, createSessions, staticToken, type DecisionEvent } from "../src/index.js";
+import { createGateway, createSessions, staticToken } from "../src/index.js";
 import { gmail as gmailProvider } from "../src/providers/gmail/index.js";
 
 interface Captured {
@@ -16,7 +16,6 @@ interface Captured {
 const REAL_TOKEN = "ya29.REAL-GOOGLE-TOKEN";
 const sessions = createSessions({ signingKey: "test-signing-key-0123456789abcdef" });
 let upstream: Captured[] = [];
-let events: DecisionEvent[] = [];
 let server: ServerType;
 let base: string;
 
@@ -25,7 +24,6 @@ beforeAll(async () => {
     providers: [gmailProvider({ credentials: staticToken({ token: REAL_TOKEN }) })],
     policy,
     sessions,
-    onDecision: (e) => events.push(e),
     upstreamFetch: async (input, init) => {
       const req = new Request(input, init);
       upstream.push({
@@ -48,7 +46,6 @@ beforeAll(async () => {
 afterAll(() => server.close());
 beforeEach(() => {
   upstream = [];
-  events = [];
 });
 
 /** The harness side: stock googleapis client. Only `auth` and `rootUrl` differ from normal use. */
@@ -83,7 +80,6 @@ describe("gateway with real googleapis client", () => {
     expect(upstream[0]!.url).toBe("https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=10&q=invoice");
     expect(upstream[0]!.headers.authorization).toBe(`Bearer ${REAL_TOKEN}`);
     expect(JSON.stringify(upstream[0]!.headers)).not.toContain(token);
-    expect(events[0]).toMatchObject({ action: "gmail.users.messages.list", effect: "allow", rules: ["#0"] });
   });
 
   it("param-level forbid: maxResults over 50", async () => {

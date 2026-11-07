@@ -1,26 +1,9 @@
 import { createMatcher, type MatchResult } from "./match.js";
-import { evaluatePolicy, type Check, type CheckRecord, type Decision } from "./evaluate.js";
+import { evaluatePolicy, type Check, type Decision } from "./evaluate.js";
 import { definePolicy, type AnyRequest, type Policy, type PolicyRule } from "./policy.js";
 import type { Credential } from "./credentials.js";
 import type { ProviderDefinition, RequestOf } from "./provider.js";
 import type { SessionClaims, Sessions } from "./session.js";
-
-export interface DecisionEvent {
-  at: string;
-  sid: string | null;
-  agent: string | null;
-  provider: string;
-  action: string | null;
-  method: string;
-  path: string;
-  /** May gain members later: treat unknown values as deny. */
-  effect: Decision["effect"] | "error";
-  rules: string[];
-  reason?: string;
-  /** Plain-language checks that ran for this request. */
-  checks?: CheckRecord[];
-  upstreamStatus?: number;
-}
 
 export interface GatewayOptions<P extends readonly ProviderDefinition[]> {
   providers: P;
@@ -34,7 +17,6 @@ export interface GatewayOptions<P extends readonly ProviderDefinition[]> {
   check?: Check<RequestOf<P>>;
   /** Per-check timeout. Default 60s. */
   checkTimeoutMs?: number;
-  onDecision?: (event: DecisionEvent) => void;
   /** Route prefix: `/p/<provider>/<upstream path>`. Default `/p`. */
   basePath?: string;
   maxBodyBytes?: number;
@@ -88,63 +70,42 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
   async function handle(req: Request): Promise<Response> {
     const url = new URL(req.url);
     const method = req.method.toUpperCase();
-    const event: DecisionEvent = {
-      at: new Date().toISOString(),
-      sid: null,
-      agent: null,
-      provider: "",
-      action: null,
-      method,
-      path: url.pathname,
-      effect: "deny",
-      rules: [],
-    };
-    const finish = (res: Response, patch: Partial<DecisionEvent>) => {
-      opts.onDecision?.({ ...event, ...patch });
-      return res;
-    };
-
     // 1. Route to provider. Upstream host is fixed by config; the harness only picks which provider.
     const route = resolveProvider(url.pathname);
-    if ("error" in route) return finish(fail(route.status, "not_found", route.error), { effect: "error", reason: route.error });
+    if ("error" in route) return fail(route.status, "not_found", route.error);
     const { entry, upstreamPath } = route;
-    event.provider = entry.def.id;
-    event.path = upstreamPath;
 
     // 2. Authenticate the session token.
     const auth = await authenticate(req, opts.sessions);
     if ("error" in auth) {
-      return finish(fail(401, "unauthenticated", "missing or invalid session token"), { reason: `unauthenticated: ${auth.error}` });
+      return fail(401, "unauthenticated", "missing or invalid session token");
     }
     const session = auth.claims;
-    event.sid = session.sid;
-    event.agent = session.agent;
 
     const override = METHOD_OVERRIDE_HEADERS.find((h) => req.headers.has(h));
-    if (override) return finish(fail(400, "bad_request", `header ${override} not allowed`), { reason: override });
+    if (override) return fail(400, "bad_request", `header ${override} not allowed`);
 
     // 3. Match against the generated operation table.
     const matched: MatchResult = entry.matcher.match(method, upstreamPath, url.searchParams);
-    if (!matched.ok) return finish(fail(matched.status, "policy_denied", matched.reason), { reason: matched.reason });
+    if (!matched.ok) return fail(matched.status, "policy_denied", matched.reason);
     const { op } = matched;
-    event.action = op.action;
 
     // 4. Read body once: decode it for policy, forward the same bytes.
     const body = await readBody(req, maxBody);
-    if (body === "too_large") return finish(fail(413, "bad_request", "body too large"), { reason: "body too large" });
+    if (body === "too_large") return fail(413, "bad_request", "body too large");
 
     let context: object = {};
     const decoder = entry.def.decoders?.[op.action];
     if (decoder) {
       if (op.variant !== "standard") {
         const reason = `${op.variant} route for ${op.action} not supported: body can't be inspected`;
-        return finish(deny(op.action, [], reason), { reason });
+        return deny(op.action, [], reason);
       }
       try {
         context = decoder({ body, contentType: req.headers.get("content-type") });
       } catch (err) {
         const reason = `could not decode request body: ${err instanceof Error ? err.message : String(err)}`;
-        return finish(deny(op.action, [], reason), { reason });
+        return deny(op.action, [], reason);
       }
     }
 
@@ -165,9 +126,8 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
         : {}),
       ...(opts.checkTimeoutMs ? { checkTimeoutMs: opts.checkTimeoutMs } : {}),
     });
-    const audit = { rules: decision.rules, reason: decision.reason, ...(decision.checks.length ? { checks: decision.checks } : {}) };
     if (decision.effect === "deny") {
-      return finish(deny(op.action, decision.rules, decision.reason), { effect: "deny", ...audit });
+      return deny(op.action, decision.rules, decision.reason);
     }
 
     // 6. Forward with the real credential.
@@ -180,7 +140,7 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
     try {
       credential = await entry.def.credentials({ session });
     } catch {
-      return finish(fail(502, "upstream_auth", "could not obtain upstream credential", op.action), { effect: "error", reason: "credential" });
+      return fail(502, "upstream_auth", "could not obtain upstream credential", op.action);
     }
     (entry.def.inject ?? bearer)({ headers, credential });
 
@@ -194,16 +154,12 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
         redirect: "manual",
       });
     } catch {
-      return finish(fail(502, "upstream_unreachable", "upstream request failed", op.action), { effect: "error", reason: "upstream" });
+      return fail(502, "upstream_unreachable", "upstream request failed", op.action);
     }
 
     const resHeaders = new Headers(upstream.headers);
     for (const h of DROP_RESPONSE_HEADERS) resHeaders.delete(h);
-    return finish(new Response(upstream.body, { status: upstream.status, headers: resHeaders }), {
-      effect: "allow",
-      ...audit,
-      upstreamStatus: upstream.status,
-    });
+    return new Response(upstream.body, { status: upstream.status, headers: resHeaders });
   }
 
   return { fetch: handle };

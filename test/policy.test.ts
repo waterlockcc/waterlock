@@ -59,7 +59,6 @@ describe("plain-language rows", () => {
       effect: "deny",
       rules: ["#1"],
       reason: "Mentions an invoice.",
-      checks: [{ condition: "contains billing info", result: true, explanation: "Mentions an invoice." }],
     });
     expect(calls).toEqual(["contains billing info"]);
   });
