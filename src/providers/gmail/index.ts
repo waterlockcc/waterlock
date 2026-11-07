@@ -1,11 +1,13 @@
 import type { CredentialSource } from "../../core/credentials.js";
 import type { ProviderRequest } from "../../core/policy.js";
-import type { ProviderDefinition } from "../../core/provider.js";
+import { createProvider, type RequestOf } from "../../core/provider.js";
 import { decodeDraftSend, decodeDraftWrite, decodeMessageSend } from "./decode.js";
 import type { GmailDraftSendContext, GmailMessageContext } from "./decode.js";
-import { gmailTable, type GmailAction, type GmailGroup, type GmailParams } from "./generated.js";
+import { gmailTable, type GmailAction, type GmailParams } from "./generated.js";
+import { gmailDefaultGroups } from "./groups.js";
 
-export type { GmailAction, GmailGroup, GmailParams } from "./generated.js";
+export type { GmailAction, GmailParams } from "./generated.js";
+export { gmailDefaultGroups } from "./groups.js";
 export type { GmailAttachment, GmailDraftSendContext, GmailMessageContext } from "./decode.js";
 export { gmailTable } from "./generated.js";
 
@@ -19,13 +21,14 @@ export interface GmailDecoded {
 
 type ContextFor<A extends GmailAction> = A extends keyof GmailDecoded ? GmailDecoded[A] : Record<string, never>;
 
-/** Discriminated union over every Gmail action. Narrow on `action` to get typed params/context. */
-export type GmailRequest = {
-  [A in GmailAction]: ProviderRequest<"gmail", A, GmailGroup, GmailParams[A], ContextFor<A>>;
+/** Every Gmail action, before any groups. Narrow on `action` to get typed params/context. */
+export type GmailBaseRequest = {
+  [A in GmailAction]: ProviderRequest<"gmail", A, never, GmailParams[A], ContextFor<A>>;
 }[GmailAction];
 
-export function gmail(opts: { credentials: CredentialSource; upstream?: string }): ProviderDefinition<GmailRequest> {
-  return {
+/** Gmail provider with the default groups (`gmail:read`, `gmail:send`, ...). Add more with `.withGroups`. */
+export function gmail(opts: { credentials: CredentialSource; upstream?: string }) {
+  return createProvider<GmailBaseRequest>({
     id: "gmail",
     upstream: opts.upstream ?? "https://gmail.googleapis.com",
     table: gmailTable,
@@ -39,5 +42,9 @@ export function gmail(opts: { credentials: CredentialSource; upstream?: string }
       "gmail.users.drafts.send": ({ body }) => decodeDraftSend(body),
     },
     credentials: opts.credentials,
-  };
+  }).withGroups(gmailDefaultGroups);
 }
+
+/** Request type with the default groups. With custom groups use `RequestOf<[typeof yourProvider]>`. */
+export type GmailRequest = RequestOf<[ReturnType<typeof gmail>]>;
+export type GmailGroup = GmailRequest["groups"][number];

@@ -3,73 +3,35 @@
 Source: Gmail API v1, revision 20261102
 
 - 79 actions, 91 routes (12 upload/resumable variants)
-- 0 actions grouped by fallback heuristic
-- 0 curated patterns matched nothing
 
-## Groups
-
-### `gmail:compose` (3)
+## Actions
 
 - `gmail.users.drafts.create` POST `/gmail/v1/users/{userId}/drafts` +upload +resumable
 - `gmail.users.drafts.delete` DELETE `/gmail/v1/users/{userId}/drafts/{id}`
-- `gmail.users.drafts.update` PUT `/gmail/v1/users/{userId}/drafts/{id}` +upload +resumable
-
-### `gmail:delete` (4)
-
-- `gmail.users.labels.delete` DELETE `/gmail/v1/users/{userId}/labels/{id}`
-- `gmail.users.messages.batchDelete` POST `/gmail/v1/users/{userId}/messages/batchDelete`
-- `gmail.users.messages.delete` DELETE `/gmail/v1/users/{userId}/messages/{id}`
-- `gmail.users.threads.delete` DELETE `/gmail/v1/users/{userId}/threads/{id}`
-
-### `gmail:forwarding` (7)
-
-- `gmail.users.settings.delegates.create` POST `/gmail/v1/users/{userId}/settings/delegates`
-- `gmail.users.settings.filters.create` POST `/gmail/v1/users/{userId}/settings/filters`
-- `gmail.users.settings.forwardingAddresses.create` POST `/gmail/v1/users/{userId}/settings/forwardingAddresses`
-- `gmail.users.settings.sendAs.create` POST `/gmail/v1/users/{userId}/settings/sendAs`
-- `gmail.users.settings.sendAs.patch` PATCH `/gmail/v1/users/{userId}/settings/sendAs/{sendAsEmail}`
-- `gmail.users.settings.sendAs.update` PUT `/gmail/v1/users/{userId}/settings/sendAs/{sendAsEmail}`
-- `gmail.users.settings.updateAutoForwarding` PUT `/gmail/v1/users/{userId}/settings/autoForwarding`
-
-### `gmail:inject` (2)
-
-- `gmail.users.messages.import` POST `/gmail/v1/users/{userId}/messages/import` +upload +resumable
-- `gmail.users.messages.insert` POST `/gmail/v1/users/{userId}/messages` +upload +resumable
-
-### `gmail:organize` (10)
-
-- `gmail.users.labels.create` POST `/gmail/v1/users/{userId}/labels`
-- `gmail.users.labels.patch` PATCH `/gmail/v1/users/{userId}/labels/{id}`
-- `gmail.users.labels.update` PUT `/gmail/v1/users/{userId}/labels/{id}`
-- `gmail.users.messages.batchModify` POST `/gmail/v1/users/{userId}/messages/batchModify`
-- `gmail.users.messages.modify` POST `/gmail/v1/users/{userId}/messages/{id}/modify`
-- `gmail.users.messages.trash` POST `/gmail/v1/users/{userId}/messages/{id}/trash`
-- `gmail.users.messages.untrash` POST `/gmail/v1/users/{userId}/messages/{id}/untrash`
-- `gmail.users.threads.modify` POST `/gmail/v1/users/{userId}/threads/{id}/modify`
-- `gmail.users.threads.trash` POST `/gmail/v1/users/{userId}/threads/{id}/trash`
-- `gmail.users.threads.untrash` POST `/gmail/v1/users/{userId}/threads/{id}/untrash`
-
-### `gmail:read` (11)
-
 - `gmail.users.drafts.get` GET `/gmail/v1/users/{userId}/drafts/{id}`
 - `gmail.users.drafts.list` GET `/gmail/v1/users/{userId}/drafts`
+- `gmail.users.drafts.send` POST `/gmail/v1/users/{userId}/drafts/send` +upload +resumable
+- `gmail.users.drafts.update` PUT `/gmail/v1/users/{userId}/drafts/{id}` +upload +resumable
 - `gmail.users.getProfile` GET `/gmail/v1/users/{userId}/profile`
 - `gmail.users.history.list` GET `/gmail/v1/users/{userId}/history`
+- `gmail.users.labels.create` POST `/gmail/v1/users/{userId}/labels`
+- `gmail.users.labels.delete` DELETE `/gmail/v1/users/{userId}/labels/{id}`
 - `gmail.users.labels.get` GET `/gmail/v1/users/{userId}/labels/{id}`
 - `gmail.users.labels.list` GET `/gmail/v1/users/{userId}/labels`
+- `gmail.users.labels.patch` PATCH `/gmail/v1/users/{userId}/labels/{id}`
+- `gmail.users.labels.update` PUT `/gmail/v1/users/{userId}/labels/{id}`
 - `gmail.users.messages.attachments.get` GET `/gmail/v1/users/{userId}/messages/{messageId}/attachments/{id}`
+- `gmail.users.messages.batchDelete` POST `/gmail/v1/users/{userId}/messages/batchDelete`
+- `gmail.users.messages.batchModify` POST `/gmail/v1/users/{userId}/messages/batchModify`
+- `gmail.users.messages.delete` DELETE `/gmail/v1/users/{userId}/messages/{id}`
 - `gmail.users.messages.get` GET `/gmail/v1/users/{userId}/messages/{id}`
+- `gmail.users.messages.import` POST `/gmail/v1/users/{userId}/messages/import` +upload +resumable
+- `gmail.users.messages.insert` POST `/gmail/v1/users/{userId}/messages` +upload +resumable
 - `gmail.users.messages.list` GET `/gmail/v1/users/{userId}/messages`
-- `gmail.users.threads.get` GET `/gmail/v1/users/{userId}/threads/{id}`
-- `gmail.users.threads.list` GET `/gmail/v1/users/{userId}/threads`
-
-### `gmail:send` (2)
-
-- `gmail.users.drafts.send` POST `/gmail/v1/users/{userId}/drafts/send` +upload +resumable
+- `gmail.users.messages.modify` POST `/gmail/v1/users/{userId}/messages/{id}/modify`
 - `gmail.users.messages.send` POST `/gmail/v1/users/{userId}/messages/send` +upload +resumable
-
-### `gmail:settings` (47)
-
+- `gmail.users.messages.trash` POST `/gmail/v1/users/{userId}/messages/{id}/trash`
+- `gmail.users.messages.untrash` POST `/gmail/v1/users/{userId}/messages/{id}/untrash`
 - `gmail.users.settings.cse.identities.create` POST `/gmail/v1/users/{userId}/settings/cse/identities`
 - `gmail.users.settings.cse.identities.delete` DELETE `/gmail/v1/users/{userId}/settings/cse/identities/{cseEmailAddress}`
 - `gmail.users.settings.cse.identities.get` GET `/gmail/v1/users/{userId}/settings/cse/identities/{cseEmailAddress}`
@@ -116,6 +78,12 @@ Source: Gmail API v1, revision 20261102
 - `gmail.users.settings.updatePop` PUT `/gmail/v1/users/{userId}/settings/pop`
 - `gmail.users.settings.updateVacation` PUT `/gmail/v1/users/{userId}/settings/vacation`
 - `gmail.users.stop` POST `/gmail/v1/users/{userId}/stop`
+- `gmail.users.threads.delete` DELETE `/gmail/v1/users/{userId}/threads/{id}`
+- `gmail.users.threads.get` GET `/gmail/v1/users/{userId}/threads/{id}`
+- `gmail.users.threads.list` GET `/gmail/v1/users/{userId}/threads`
+- `gmail.users.threads.modify` POST `/gmail/v1/users/{userId}/threads/{id}/modify`
+- `gmail.users.threads.trash` POST `/gmail/v1/users/{userId}/threads/{id}/trash`
+- `gmail.users.threads.untrash` POST `/gmail/v1/users/{userId}/threads/{id}/untrash`
 - `gmail.users.watch` POST `/gmail/v1/users/{userId}/watch`
 
 ## Alternate routes

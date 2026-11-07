@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
-import { fromDiscovery, fromOpenAPI, generate, globToRegExp, type DiscoveryDoc } from "../src/codegen/index.js";
+import { fromDiscovery, fromOpenAPI, generate, type DiscoveryDoc } from "../src/codegen/index.js";
 import config from "../src/providers/gmail/gmail.config.js";
 
 const specUrl = new URL("../src/providers/gmail/spec.json", import.meta.url);
@@ -23,16 +23,9 @@ describe("gmail codegen", async () => {
     ]);
   });
 
-  it("curation beats the method heuristic", () => {
-    expect(byAction("gmail.users.messages.batchDelete")[0]!.groups).toEqual(["gmail:delete"]); // POST, but destructive
-    expect(byAction("gmail.users.messages.trash")[0]!.groups).toEqual(["gmail:organize"]);
-    expect(byAction("gmail.users.settings.updateAutoForwarding")[0]!.groups).toEqual(["gmail:forwarding", "gmail:settings"]);
-    expect(byAction("gmail.users.drafts.delete")[0]!.groups).toEqual(["gmail:compose"]);
-  });
-
-  it("nothing left on fallback, no stale patterns", () => {
-    expect(result.report).toContain("- 0 actions grouped by fallback heuristic");
-    expect(result.report).toContain("- 0 curated patterns matched nothing");
+  it("emits actions and params only: no groups in the generated table", () => {
+    expect(result.code).not.toContain("Group");
+    expect(Object.keys(result.table.operations[0]!)).not.toContain("groups");
   });
 
   it("types query params", () => {
@@ -59,34 +52,18 @@ describe("openapi codegen", () => {
     },
   };
 
-  it("normalizes, groups by fallback, and reports stale patterns", () => {
-    const spec = fromOpenAPI(doc, { provider: "tiny" });
-    const result = generate(spec, {
+  it("normalizes operations and types params", () => {
+    const result = generate(fromOpenAPI(doc, { provider: "tiny" }), {
       provider: "tiny",
       typePrefix: "Tiny",
       source: { kind: "openapi", file: "unused" },
       out: "unused",
-      groups: { danger: ["tiny.repos/delete"], gone: ["tiny.pulls/*"] },
-      fallback: (op) => (op.method === "GET" ? "read" : "write"),
     });
-
-    const groups = Object.fromEntries(result.table.operations.map((o) => [o.action, o.groups]));
-    expect(groups).toEqual({
-      "tiny.issues/create": ["tiny:write"],
-      "tiny.issues/list": ["tiny:read"],
-      "tiny.repos/delete": ["tiny:danger"],
-    });
+    expect(result.table.operations.map((o) => [o.action, o.method])).toEqual([
+      ["tiny.issues/create", "POST"],
+      ["tiny.issues/list", "GET"],
+      ["tiny.repos/delete", "DELETE"],
+    ]);
     expect(result.code).toContain(`"limit"?: number;`);
-    expect(result.report).toContain("`gone`: `tiny.pulls/*`");
-    expect(result.report).toContain("- 2 actions grouped by fallback heuristic");
-  });
-});
-
-describe("globToRegExp", () => {
-  it("* is one segment, ** is many", () => {
-    expect(globToRegExp("gmail.users.*.trash").test("gmail.users.messages.trash")).toBe(true);
-    expect(globToRegExp("gmail.users.*.trash").test("gmail.users.a.b.trash")).toBe(false);
-    expect(globToRegExp("gmail.users.settings.**").test("gmail.users.settings.cse.keypairs.get")).toBe(true);
-    expect(globToRegExp("gmail.users.settings.*AutoForwarding").test("gmail.users.settings.updateAutoForwarding")).toBe(true);
   });
 });

@@ -58,7 +58,11 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
   const providers = new Map(
     opts.providers.map((p) => [
       p.id,
-      { def: p, matcher: createMatcher(p.table, { allowedGlobalQueryParams: p.allowedGlobalQueryParams }) },
+      {
+        def: p,
+        matcher: createMatcher(p.table, { allowedGlobalQueryParams: p.allowedGlobalQueryParams }),
+        groupsByAction: groupsByAction(p),
+      },
     ]),
   );
 
@@ -148,7 +152,7 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
     const policyReq = {
       provider: entry.def.id,
       action: op.action,
-      groups: op.groups,
+      groups: entry.groupsByAction.get(op.action) ?? [],
       params: matched.params,
       context,
       session,
@@ -245,4 +249,14 @@ function fail(status: number, code: string, message: string, action?: string, ru
 
 function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** action -> ["<provider>:<group>", ...] from the provider's withGroups registrations. */
+function groupsByAction(p: ProviderDefinition): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  for (const [name, actions] of Object.entries(p.groups ?? {})) {
+    for (const action of actions) out.set(action, [...(out.get(action) ?? []), `${p.id}:${name}`]);
+  }
+  for (const list of out.values()) list.sort();
+  return out;
 }

@@ -56,12 +56,9 @@ async function main(): Promise<void> {
   await writeFile(outFile, code);
   if (reportFile) await writeFile(reportFile, report);
 
-  const fallback = report.match(/- (\d+) actions grouped by fallback/)?.[1];
-  const unused = report.match(/- (\d+) curated patterns matched nothing/)?.[1];
   console.log(
     `${config.provider}: ${spec.operations.length} actions, ${table.operations.length} routes -> ${outFile}`,
   );
-  console.log(`  ${fallback} actions on fallback grouping, ${unused} unused patterns`);
   if (reportFile) console.log(`  review: ${reportFile}`);
 }
 

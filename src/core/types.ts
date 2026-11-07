@@ -29,7 +29,6 @@ export interface Operation {
   variant: OperationVariant;
   params: readonly ParamSpec[];
   hasBody: boolean;
-  groups: readonly string[];
 }
 
 export interface OperationTable {
