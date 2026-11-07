@@ -19,13 +19,10 @@ export interface ProviderRequest<
 }
 
 export type AnyRequest = ProviderRequest;
-export type Facts = Record<string, unknown>;
 
 type GroupOf<R> = R extends { groups: readonly (infer G)[] } ? G : never;
 
-export type RuleInput<R extends AnyRequest, F extends Facts> = R & {
-  /** Facts computed by the gateway's `enrich` hook. Never supplied by the agent. */
-  facts: F;
+export type RuleInput<R extends AnyRequest> = R & {
   in(group: GroupOf<R>): boolean;
   /**
    * Dynamic condition in plain language, e.g. "The email contains billing information".
@@ -34,17 +31,17 @@ export type RuleInput<R extends AnyRequest, F extends Facts> = R & {
   check(condition: string): boolean;
 };
 
-export interface PolicyRule<R extends AnyRequest = AnyRequest, F extends Facts = Facts> {
+export interface PolicyRule<R extends AnyRequest = AnyRequest> {
   /** Sync predicate. Mix static logic with `r.check("...")` for dynamic conditions. */
-  rule: (r: RuleInput<R, F>) => boolean;
+  rule: (r: RuleInput<R>) => boolean;
   /** Effect when the rule matches. Default "allow". May gain members later (e.g. "approve"). */
   action?: "allow" | "deny";
   /** Context for the calling agent when this rule decides the outcome. */
   reason?: string;
 }
 
-export interface Policy<R extends AnyRequest = AnyRequest, F extends Facts = Facts> {
-  readonly rules: readonly PolicyRule<R, F>[];
+export interface Policy<R extends AnyRequest = AnyRequest> {
+  readonly rules: readonly PolicyRule<R>[];
 }
 
 /**
@@ -53,8 +50,6 @@ export interface Policy<R extends AnyRequest = AnyRequest, F extends Facts = Fac
  *   - any matching "allow" rule -> allow
  *   - otherwise                 -> deny (default deny)
  */
-export function definePolicy<R extends AnyRequest = AnyRequest, F extends Facts = Facts>(
-  rules: PolicyRule<R, F>[],
-): Policy<R, F> {
+export function definePolicy<R extends AnyRequest = AnyRequest>(rules: PolicyRule<R>[]): Policy<R> {
   return { rules: Object.freeze([...rules]) };
 }

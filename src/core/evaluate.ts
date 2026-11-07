@@ -1,4 +1,4 @@
-import type { AnyRequest, Facts, Policy, PolicyRule, RuleInput } from "./policy.js";
+import type { AnyRequest, Policy, PolicyRule, RuleInput } from "./policy.js";
 import type { SessionStore } from "./store.js";
 
 /**
@@ -52,10 +52,9 @@ const MAX_ROUNDS = 8;
  * re-runs. Static guards (`r.action === ... && r.check(...)`) short-circuit, so checks
  * only run where they can change the outcome. Any error, timeout or malformed result denies.
  */
-export async function evaluatePolicy<R extends AnyRequest, F extends Facts>(
-  policy: Policy<R, F>,
+export async function evaluatePolicy<R extends AnyRequest>(
+  policy: Policy<R>,
   req: R,
-  facts: F,
   opts: CheckOptions<R> = {},
 ): Promise<Decision> {
   const answers = new Map<string, CheckRecord>();
@@ -63,7 +62,7 @@ export async function evaluatePolicy<R extends AnyRequest, F extends Facts>(
   const rules = policy.rules.map((rule, i) => ({ id: `#${i}`, rule, action: rule.action ?? "allow" }));
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
-    const results = rules.map((r) => ({ ...r, result: run(r.rule, req, facts, answers) }));
+    const results = rules.map((r) => ({ ...r, result: run(r.rule, req, answers) }));
 
     const failed = results.find((r) => "error" in r.result);
     if (failed) return deny([failed.id], `rule ${failed.id} ${(failed.result as { error: string }).error}`);
@@ -101,12 +100,11 @@ export async function evaluatePolicy<R extends AnyRequest, F extends Facts>(
   return deny([], `policy needed more than ${MAX_ROUNDS} rounds of checks`);
 }
 
-function run<R extends AnyRequest, F extends Facts>(rule: PolicyRule<R, F>, req: R, facts: F, answers: Map<string, CheckRecord>): RunResult {
+function run<R extends AnyRequest>(rule: PolicyRule<R>, req: R, answers: Map<string, CheckRecord>): RunResult {
   const used: string[] = [];
   const groups = new Set<string>(req.groups);
   const input = Object.freeze({
     ...req,
-    facts: Object.freeze({ ...facts }),
     in: (g: string) => groups.has(g),
     check: (condition: string) => {
       const answer = answers.get(condition);
@@ -114,7 +112,7 @@ function run<R extends AnyRequest, F extends Facts>(rule: PolicyRule<R, F>, req:
       used.push(condition);
       return answer.result;
     },
-  }) as unknown as RuleInput<R, F>;
+  }) as unknown as RuleInput<R>;
 
   let value: unknown;
   try {

@@ -20,7 +20,7 @@ const counting = (answer: boolean, explanation?: string) => {
   return { model, calls: model.conditions };
 };
 const evaluate = (p: Policy, model?: Model, timeoutMs?: number) =>
-  evaluatePolicy(p, req, {}, model ? { check: modelCheck(model), ...(timeoutMs ? { checkTimeoutMs: timeoutMs } : {}) } : {});
+  evaluatePolicy(p, req, model ? { check: modelCheck(model), ...(timeoutMs ? { checkTimeoutMs: timeoutMs } : {}) } : {});
 
 describe("static rules", () => {
   it("default deny", async () => {

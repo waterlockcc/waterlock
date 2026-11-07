@@ -25,7 +25,6 @@ beforeAll(async () => {
     providers: [gmailProvider({ credentials: staticToken({ token: REAL_TOKEN }) })],
     policy,
     sessions,
-    enrich: () => ({ sendsLastHour: 0 }),
     onDecision: (e) => events.push(e),
     upstreamFetch: async (input, init) => {
       const req = new Request(input, init);

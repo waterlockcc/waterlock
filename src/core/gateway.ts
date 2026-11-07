@@ -1,6 +1,6 @@
 import { createMatcher, type MatchResult } from "./match.js";
 import { evaluatePolicy, type Check, type CheckRecord, type Decision } from "./evaluate.js";
-import { definePolicy, type AnyRequest, type Facts, type Policy, type PolicyRule } from "./policy.js";
+import { definePolicy, type AnyRequest, type Policy, type PolicyRule } from "./policy.js";
 import type { Credential } from "./credentials.js";
 import type { ProviderDefinition, RequestOf } from "./provider.js";
 import type { SessionClaims, Sessions } from "./session.js";
@@ -22,16 +22,14 @@ export interface DecisionEvent {
   upstreamStatus?: number;
 }
 
-export interface GatewayOptions<P extends readonly ProviderDefinition[], F extends Facts> {
+export interface GatewayOptions<P extends readonly ProviderDefinition[]> {
   providers: P;
   /**
    * `definePolicy(...)` result, or the rules array inline (typed from `providers`, no type argument).
    * Must cover every provider's requests: a Gmail-only policy on a Gmail + GitHub gateway won't compile.
    */
-  policy: Policy<RequestOf<P>, F> | PolicyRule<RequestOf<P>, F>[];
+  policy: Policy<RequestOf<P>> | PolicyRule<RequestOf<P>>[];
   sessions: Sessions;
-  /** Async fact lookup (counters, history, directory). Throwing denies. */
-  enrich?: (req: RequestOf<P>) => F | Promise<F>;
   /** Answers `r.check("...")`, e.g. with your own AI SDK call. Absent = rules using checks deny. */
   check?: Check<RequestOf<P>>;
   /** Per-check timeout. Default 60s. */
@@ -50,8 +48,8 @@ const FORWARD_REQUEST_HEADERS = ["accept", "accept-language", "content-type", "i
 const METHOD_OVERRIDE_HEADERS = ["x-http-method-override", "x-http-method", "x-method-override"];
 const DROP_RESPONSE_HEADERS = ["set-cookie", "content-encoding", "content-length", "transfer-encoding", "connection", "keep-alive"];
 
-export function createGateway<const P extends readonly ProviderDefinition[], F extends Facts = Facts>(
-  opts: GatewayOptions<P, F>,
+export function createGateway<const P extends readonly ProviderDefinition[]>(
+  opts: GatewayOptions<P>,
 ) {
   const policy = Array.isArray(opts.policy) ? definePolicy(opts.policy) : opts.policy;
   const basePath = (opts.basePath ?? "/p").replace(/\/$/, "");
@@ -156,16 +154,8 @@ export function createGateway<const P extends readonly ProviderDefinition[], F e
       session,
     } satisfies AnyRequest as RequestOf<P>;
 
-    // 5. Facts, then policy.
-    let facts: F;
-    try {
-      facts = opts.enrich ? await opts.enrich(policyReq) : ({} as F);
-    } catch (err) {
-      const reason = `enrich failed: ${err instanceof Error ? err.message : String(err)}`;
-      return finish(deny(op.action, [], reason), { reason });
-    }
-
-    const decision: Decision = await evaluatePolicy(policy, policyReq, facts, {
+    // 5. Policy.
+    const decision: Decision = await evaluatePolicy(policy, policyReq, {
       ...(opts.check
         ? { check: (input: Parameters<NonNullable<typeof opts.check>>[0]) => opts.check!({ ...input, ...(opts.sessions.store ? { store: opts.sessions.store } : {}) }) }
         : {}),

@@ -1,9 +1,7 @@
 import { definePolicy } from "../../src/index.js";
 import type { GmailRequest } from "../../src/providers/gmail/index.js";
 
-export type Facts = { sendsLastHour: number };
-
-export const policy = definePolicy<GmailRequest, Facts>([
+export const policy = definePolicy<GmailRequest>([
   { rule: (r) => r.session.agent === "inbox-assistant" && r.in("gmail:read") },
   { rule: (r) => r.in("gmail:compose") },
   // Every recipient must be internal. `every` on the recipient list, not "contains acme.com".
@@ -19,7 +17,6 @@ export const policy = definePolicy<GmailRequest, Facts>([
     action: "deny",
     reason: "List at most 50 messages per page.",
   },
-  { rule: (r) => r.in("gmail:send") && r.facts.sendsLastHour >= 20, action: "deny", reason: "Send limit reached (20/hour)." },
   // Recipients of a stored draft are unknown to the gateway (context is null), so never send drafts.
   { rule: (r) => r.action === "gmail.users.drafts.send", action: "deny", reason: "Sending stored drafts is not allowed." },
 ]);

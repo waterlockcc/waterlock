@@ -2,7 +2,6 @@ export { createGateway, type DecisionEvent, type GatewayOptions } from "./core/g
 export {
   definePolicy,
   type AnyRequest,
-  type Facts,
   type Policy,
   type PolicyRule,
   type ProviderRequest,
