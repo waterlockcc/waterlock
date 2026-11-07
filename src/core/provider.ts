@@ -6,7 +6,7 @@ import type { OperationTable } from "./types.js";
  * Extracts policy-relevant fields from a request body. Throwing denies the
  * request: if the gateway can't read what a call does, it doesn't forward it.
  */
-export type Decoder = (input: { body: Uint8Array; contentType: string | null }) => object;
+export type Decoder = (input: { body: Uint8Array; contentType: string | null }) => object | Promise<object>;
 
 /** `R` is the request type rules see for this provider. Type-only: drives policy autocomplete and checks. */
 export interface ProviderDefinition<R extends AnyRequest = AnyRequest> {

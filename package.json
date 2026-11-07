@@ -35,5 +35,8 @@
     "zod": {
       "optional": true
     }
+  },
+  "dependencies": {
+    "postal-mime": "4.2.0"
   }
 }

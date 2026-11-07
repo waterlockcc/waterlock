@@ -8,14 +8,14 @@ import { selfSendPolicy } from "./fixtures/self-send-policy.js";
 const SELF = "alice@acme.com";
 const setup = () => {
   const model = mockCheckModel();
-  const evaluate = (mime: string) =>
+  const evaluate = async (mime: string) =>
     evaluatePolicy(
       selfSendPolicy,
       {
         provider: "gmail",
         action: "gmail.users.messages.send",
         params: { userId: "me" },
-        context: decodeMessageSend(new TextEncoder().encode(JSON.stringify({ raw: Buffer.from(mime).toString("base64url") }))),
+        context: await decodeMessageSend(new TextEncoder().encode(JSON.stringify({ raw: Buffer.from(mime).toString("base64url") }))),
         session: { sid: "s", provider: "gmail", agent: "a", onBehalfOf: SELF, iat: 0, exp: 0 },
       } satisfies GmailRequest,
       { check: modelCheck(model) },

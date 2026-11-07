@@ -78,7 +78,7 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
         return deny(op.action, [], reason);
       }
       try {
-        context = decoder({ body, contentType: req.headers.get("content-type") });
+        context = await decoder({ body, contentType: req.headers.get("content-type") });
       } catch (err) {
         const reason = `could not decode request body: ${err instanceof Error ? err.message : String(err)}`;
         return deny(op.action, [], reason);
