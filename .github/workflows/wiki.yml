@@ -1,0 +1,42 @@
+name: Wiki
+
+# wiki/ in this repo is the source of the GitHub wiki. Merging a change to it on main
+# mirrors the folder into the wiki repo (<repo>.wiki.git), so edits made in the wiki UI
+# are overwritten: edit wiki/ instead. wiki/Home.md is the wiki's landing page.
+#
+# The wiki repo only exists after its first page is created in the GitHub UI (once).
+on:
+  push:
+    branches: [main]
+    paths: [wiki/**]
+  workflow_dispatch:
+
+permissions:
+  contents: write # GITHUB_TOKEN pushes to the wiki repo
+
+concurrency:
+  group: wiki
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Mirror wiki/ into the wiki repo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          WIKI="$RUNNER_TEMP/wiki"
+          if ! git clone -q "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git" "$WIKI"; then
+            echo "::error::No wiki repo yet. Create any page once at https://github.com/${GITHUB_REPOSITORY}/wiki, then re-run."
+            exit 1
+          fi
+          rsync -a --delete --exclude .git wiki/ "$WIKI/"
+          cd "$WIKI"
+          git add -A
+          if git diff --cached --quiet; then echo "wiki already up to date"; exit 0; fi
+          git -c user.name="github-actions[bot]" -c user.email="41898283+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "Sync from ${GITHUB_REPOSITORY}@${GITHUB_SHA::7}"
+          git push -q
