@@ -3,7 +3,7 @@ import { checkPrompt, checkSystemPrompt } from "../src/checks/index.js";
 import { evaluatePolicy } from "../src/core/evaluate.js";
 import { definePolicy, type AnyRequest, type Policy } from "../src/core/policy.js";
 import type { GmailRequest } from "../src/providers/gmail/index.js";
-import { mockCheckModel, modelCheck } from "./mock-judge.js";
+import { mockCheckModel, modelCheck } from "./fixtures/mock-check-model.js";
 
 const req: AnyRequest = {
   provider: "gmail",

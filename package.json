@@ -13,7 +13,6 @@
   "scripts": {
     "gen:gmail": "tsx src/codegen/cli.ts src/providers/gmail/gmail.config.ts",
     "gen:gmail:fetch": "tsx src/codegen/cli.ts src/providers/gmail/gmail.config.ts --fetch",
-    "example": "tsx examples/server.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

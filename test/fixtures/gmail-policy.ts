@@ -1,5 +1,5 @@
-import { definePolicy } from "../src/index.js";
-import type { GmailRequest } from "../src/providers/gmail/index.js";
+import { definePolicy } from "../../src/index.js";
+import type { GmailRequest } from "../../src/providers/gmail/index.js";
 
 export type Facts = { sendsLastHour: number };
 

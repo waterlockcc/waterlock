@@ -2,7 +2,7 @@ import type { AddressInfo } from "node:net";
 import { serve, type ServerType } from "@hono/node-server";
 import { auth, gmail } from "@googleapis/gmail";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { policy, type Facts } from "../examples/policy.js";
+import { policy } from "./fixtures/gmail-policy.js";
 import { createGateway, createSessions, staticToken, type DecisionEvent } from "../src/index.js";
 import { gmail as gmailProvider } from "../src/providers/gmail/index.js";
 

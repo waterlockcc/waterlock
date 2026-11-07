@@ -1,7 +1,7 @@
 import { generateText, Output, type LanguageModel } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
-import { checkPrompt, checkSystemPrompt, verdictSchema } from "../src/checks/index.js";
-import type { Check } from "../src/index.js";
+import { checkPrompt, checkSystemPrompt, verdictSchema } from "../../src/checks/index.js";
+import type { Check } from "../../src/index.js";
 
 /** The same check function the examples write, against any (mock) AI SDK model. */
 export const modelCheck = (model: LanguageModel): Check => async ({ condition, request, store }) => {

@@ -4,11 +4,11 @@ import { auth, gmail } from "@googleapis/gmail";
 import { generateText, stepCountIs } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createTools } from "../examples/ai-sdk-send-email/harness/tools.js";
-import { policy } from "../examples/ai-sdk-send-email/gateway/policy.js";
 import { createGateway, createSessions, staticToken } from "../src/index.js";
 import { gmail as gmailProvider } from "../src/providers/gmail/index.js";
-import { mockCheckModel, modelCheck } from "./mock-judge.js";
+import { mockCheckModel, modelCheck } from "./fixtures/mock-check-model.js";
+import { selfSendPolicy } from "./fixtures/self-send-policy.js";
+import { createSendEmailTools } from "./fixtures/send-email-tool.js";
 
 const SELF = "alice@acme.com";
 const sessions = createSessions({ signingKey: "test-signing-key-0123456789abcdef" });
@@ -19,7 +19,7 @@ let rootUrl: string;
 beforeAll(async () => {
   const gateway = createGateway({
     providers: [gmailProvider({ credentials: staticToken({ token: "real-google-token" }) })],
-    policy,
+    policy: selfSendPolicy,
     check: modelCheck(mockCheckModel()),
     sessions,
     upstreamFetch: async (_url, init) => {
@@ -44,7 +44,7 @@ const call = (id: string, to: string, body: string) => ({
   input: JSON.stringify({ to, subject: "hi", body }),
 });
 
-describe("ai-sdk-send-email", () => {
+describe("AI SDK tools through the gateway", () => {
   it("allowed calls succeed, denied calls come back to the model as tool errors", async () => {
     const { token } = await sessions.mint({ agent: "assistant", onBehalfOf: SELF });
     const oauth = new auth.OAuth2();
@@ -68,7 +68,7 @@ describe("ai-sdk-send-email", () => {
       ],
     });
 
-    const { steps } = await generateText({ model, tools: createTools(api), stopWhen: stepCountIs(5), prompt: "go" });
+    const { steps } = await generateText({ model, tools: createSendEmailTools(api), stopWhen: stepCountIs(5), prompt: "go" });
     const parts = steps[0]!.content;
 
     expect(parts.filter((p) => p.type === "tool-result").map((p) => p.output)).toEqual([{ id: "msg-1" }]);

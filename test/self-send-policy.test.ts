@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { policy } from "../examples/ai-sdk-send-email/gateway/policy.js";
 import { evaluatePolicy } from "../src/core/evaluate.js";
 import type { GmailRequest } from "../src/providers/gmail/index.js";
 import { decodeMessageSend } from "../src/providers/gmail/decode.js";
-import { mockCheckModel, modelCheck } from "./mock-judge.js";
+import { mockCheckModel, modelCheck } from "./fixtures/mock-check-model.js";
+import { selfSendPolicy } from "./fixtures/self-send-policy.js";
 
 const SELF = "alice@acme.com";
 const setup = () => {
   const model = mockCheckModel();
   const evaluate = (mime: string) =>
     evaluatePolicy(
-      policy,
+      selfSendPolicy,
       {
         provider: "gmail",
         action: "gmail.users.messages.send",
@@ -25,7 +25,7 @@ const setup = () => {
   return { model, evaluate };
 };
 
-describe("ai-sdk-send-email policy", () => {
+describe("self-send policy with a billing check", () => {
   it("allows send to self after the billing check passes", async () => {
     const { model, evaluate } = setup();
     expect(await evaluate(`To: ${SELF}\r\n\r\nBuy milk`)).toMatchObject({ effect: "allow" });
