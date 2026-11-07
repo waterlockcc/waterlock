@@ -4,6 +4,7 @@
   "license": "MIT",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.26.0",
   "exports": {
     ".": "./src/index.ts",
     "./codegen": "./src/codegen/index.ts",
