@@ -22,7 +22,6 @@ services:
     working_dir: /app/examples/ai-sdk-linear-triage/gateway
     command: ["/app/node_modules/.bin/tsx", "index.ts"]
     environment:
-      HOST: 0.0.0.0
       SESSION_FILE: /shared/session
       LINEAR_UPSTREAM: http://fake-linear:4000
     volumes: [session:/shared]
@@ -37,8 +36,9 @@ services:
     build: *build
     working_dir: /app/examples/ai-sdk-linear-triage/harness
     command: ["/app/node_modules/.bin/tsx", "index.ts"]
+    # Same network namespace as the gateway: the Linear SDK only allows plain http to localhost.
+    network_mode: service:gateway
     environment:
-      GATEWAY_URL: http://gateway:8787/
       SESSION_FILE: /shared/session
       # From `claude setup-token`, in harness/.env (pass with --env-file harness/.env)
       CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:?put CLAUDE_CODE_OAUTH_TOKEN=... in harness/.env and run with --env-file harness/.env}
