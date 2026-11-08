@@ -1,6 +1,6 @@
 # Linear
 
-GraphQL. See the [GraphQL limitation](Actions#graphql-limitation).
+GraphQL. See the [GraphQL limitation](Actions#graphql-limitation). All actions: [codegen-report.md](https://github.com/waterlockcc/waterlock/blob/main/src/providers/linear/codegen-report.md).
 
 ```ts
 import { linear } from "@waterlock/gateway/providers/linear";
