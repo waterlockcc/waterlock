@@ -2,6 +2,8 @@
 
 GraphQL. See the [GraphQL limitation](Actions#graphql-limitation). All actions: [codegen-report.md](https://github.com/waterlockcc/waterlock/blob/main/src/providers/linear/codegen-report.md).
 
+SDK relation calls are nested selections: `issue.comments()` sends `issue(id) { comments }`, so it is `linear.query.issue`, not `linear.query.comments`. Allowing `linear.query.issue` allows reading the issue's comments, attachments and history.
+
 ```ts
 import { linear } from "@waterlock/gateway/providers/linear";
 
