@@ -16,5 +16,5 @@ Only the top-level field is checked, not nested selections.
 
 - Mutations: the selection only shapes the response, so the action covers the write.
 - Queries: an allowed query can read anything reachable from its field, e.g. `issue { team { members { email } } }`. Reads are limited by the upstream token's scopes, not by policy.
-- SDK relation calls are nested selections too. Linear's `issue.comments()` sends `issue(id) { comments }`, so it is `linear.query.issue`, not `linear.query.comments`. Allowing `linear.query.issue` allows reading the issue's comments, attachments and history.
+- SDK relation calls can be nested selections too. For example, Linear's `issue.comments()` sends `issue(id) { comments }`, so it is `linear.query.issue`, not `linear.query.comments`. Allowing `linear.query.issue` allows reading the issue's comments, attachments and history.
 - One operation and one top-level field per request. Batches, subscriptions and persisted queries are rejected.
