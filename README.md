@@ -1,6 +1,6 @@
 # waterlock
 
-Open source solution to [workos airlock](https://workos.com/blog/workos-airlock)
+Open source solution to [workos airlock](https://workos.com/blog/workos-airlock).
 
 ** This repo is a work in progress. Not ready for production usage. If you would like to contribute, 
 please raise an issue and we can chat **
@@ -24,13 +24,3 @@ really broad permissions. What waterlock gives you
 ## Guide
 
 Install and usage: [wiki](https://github.com/waterlockcc/waterlock/wiki).
-
-## Develop
-
-```sh
-pnpm gen:gmail      # spec -> src/providers/gmail/generated.ts
-pnpm test
-pnpm build          # -> dist/
-```
-
-Release: bump `version` in package.json and merge. CI publishes to npm and creates the `v<version>` release.
