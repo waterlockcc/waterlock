@@ -110,7 +110,7 @@ describe("graphql matcher: top-level field is the action", () => {
 describe("graphql codegen", () => {
   it("committed linear generated.ts matches schema + config (run pnpm gen:linear if this fails)", async () => {
     const sdl = await readFile(new URL("../src/providers/linear/schema.graphql", import.meta.url), "utf8");
-    const { code } = await generateGraphql(sdl, config);
+    const { code } = generateGraphql(sdl, config);
     expect(await readFile(new URL("../src/providers/linear/generated.ts", import.meta.url), "utf8")).toBe(code);
   });
 
@@ -128,7 +128,7 @@ describe("graphql codegen", () => {
   const tinyConfig = { ...config, provider: "tiny", typePrefix: "Tiny", scalars: {} };
 
   it("one action per top-level query/mutation field, subscriptions skipped, descriptions stripped", async () => {
-    const { actions, code } = await generateGraphql(`"Docs." ${tiny}`, tinyConfig);
+    const { actions, code } = generateGraphql(`"Docs." ${tiny}`, tinyConfig);
     expect(actions).toEqual(["tiny.mutation.thingDelete", "tiny.query.thing", "tiny.query.things"]);
     expect(code).toContain(`"tiny.query.things": { opts?: TinyOpts | null; first: number | null; };`);
     expect(code).toContain(`export interface TinyOpts { color: TinyColor | null; tags?: string[] | null; at?: unknown; }`);

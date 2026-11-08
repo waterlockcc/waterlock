@@ -17,7 +17,7 @@ policy: [
 
 ## Plain-language rules
 
-Deny only. Answered by your own model via `check`, and only run once the function rows would allow.
+Deny only. Answered by your own model via `check`, and only run once the function rows would allow. `@waterlock/gateway/checks` needs `zod` (the AI SDK already requires it).
 
 ```ts
 import { generateText, Output } from "ai";

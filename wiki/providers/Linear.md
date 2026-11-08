@@ -1,6 +1,6 @@
 # Linear
 
-GraphQL. Needs `graphql` installed. See the [GraphQL limitation](Actions#graphql-limitation).
+GraphQL. See the [GraphQL limitation](Actions#graphql-limitation).
 
 ```ts
 import { linear } from "@waterlock/gateway/providers/linear";

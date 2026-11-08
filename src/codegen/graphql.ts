@@ -1,3 +1,4 @@
+import * as g from "graphql";
 import type { GraphQLArgument, GraphQLField, GraphQLInputField, GraphQLInputType, GraphQLNamedType, GraphQLObjectType } from "graphql";
 import type { CodegenConfig } from "./config.js";
 
@@ -21,8 +22,7 @@ const BUILTIN_TS: Record<string, string> = { String: "string", ID: "string", Int
  * its arguments are the params. Subscriptions are skipped. The emitted SDL has descriptions
  * stripped (they don't affect validation or coercion).
  */
-export async function generateGraphql(sdl: string, config: CodegenConfig): Promise<GenerateGraphqlResult> {
-  const g = await import("graphql"); // optional peer: only GraphQL codegen needs it
+export function generateGraphql(sdl: string, config: CodegenConfig): GenerateGraphqlResult {
   const schema = g.buildSchema(sdl);
   const P = config.typePrefix;
   const scalars = { ...BUILTIN_TS, ...config.scalars };
