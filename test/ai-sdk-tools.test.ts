@@ -12,7 +12,9 @@ import { selfSendPolicy } from "./fixtures/self-send-policy.js";
 import { createSendEmailTools } from "./fixtures/send-email-tool.js";
 
 const SELF = "alice@acme.com";
-const sessions = createSessions({ signingKey: "test-signing-key-0123456789abcdef" });
+const sessions = createSessions({
+  signingKey: "test-signing-key-0123456789abcdef", // gitleaks:allow
+});
 let up: Awaited<ReturnType<typeof fakeUpstream>>;
 let server: ServerType;
 let rootUrl: string;
@@ -20,7 +22,12 @@ let rootUrl: string;
 beforeAll(async () => {
   up = await fakeUpstream(() => Response.json({ id: `msg-${up.seen.length}` }));
   const gateway = createGateway({
-    providers: [gmailProvider({ credentials: staticToken({ token: "real-google-token" }), upstream: up.url })],
+    providers: [
+      gmailProvider({
+        credentials: staticToken({ token: "real-google-token" }),
+        upstream: up.url,
+      }),
+    ],
     policy: selfSendPolicy,
     check: modelCheck(mockCheckModel()),
     sessions,
@@ -47,12 +54,17 @@ const call = (id: string, to: string, body: string) => ({
 
 describe("AI SDK tools through the gateway", () => {
   it("allowed calls succeed, denied calls come back to the model as tool errors", async () => {
-    const { token } = await sessions.mint({ provider: "gmail", agent: "assistant", onBehalfOf: SELF });
+    const { token } = await sessions.mint({
+      provider: "gmail",
+      agent: "assistant",
+      onBehalfOf: SELF,
+    });
     const oauth = new auth.OAuth2();
     oauth.setCredentials({ access_token: token });
     const api = gmail({ version: "v1", auth: oauth, rootUrl });
 
-    // Step 1: model calls sendEmail three times. Step 2: model replies with text.
+    // Step 1: model calls sendEmail three times. Step 2: model replies with
+    // text.
     const model = new MockLanguageModelV4({
       doGenerate: [
         {
@@ -65,15 +77,29 @@ describe("AI SDK tools through the gateway", () => {
           usage,
           warnings: [],
         },
-        { content: [{ type: "text", text: "done" }], finishReason: { unified: "stop", raw: undefined }, usage, warnings: [] },
+        {
+          content: [{ type: "text", text: "done" }],
+          finishReason: { unified: "stop", raw: undefined },
+          usage,
+          warnings: [],
+        },
       ],
     });
 
-    const { steps } = await generateText({ model, tools: createSendEmailTools(api), stopWhen: stepCountIs(5), prompt: "go" });
+    const { steps } = await generateText({
+      model,
+      tools: createSendEmailTools(api),
+      stopWhen: stepCountIs(5),
+      prompt: "go",
+    });
     const parts = steps[0]!.content;
 
-    expect(parts.filter((p) => p.type === "tool-result").map((p) => p.output)).toEqual([{ id: "msg-1" }]);
-    expect(parts.filter((p) => p.type === "tool-error").map((p) => String(p.error))).toEqual([
+    expect(
+      parts.filter((p) => p.type === "tool-result").map((p) => p.output),
+    ).toEqual([{ id: "msg-1" }]);
+    expect(
+      parts.filter((p) => p.type === "tool-error").map((p) => String(p.error)),
+    ).toEqual([
       expect.stringContaining("You can only send email to yourself."),
       expect.stringContaining("The email mentions billing."),
     ]);

@@ -1,4 +1,9 @@
-import { HTTP_METHODS, type HttpMethod, type ParamSpec, type ParamType } from "../core/types.js";
+import {
+  HTTP_METHODS,
+  type HttpMethod,
+  type ParamSpec,
+  type ParamType,
+} from "../core/types.js";
 import type { NormalizedSpec, SpecOperation } from "./model.js";
 
 /** OpenAPI 3.x document (subset we use). */
@@ -35,7 +40,10 @@ interface OpenAPIOperation {
  * Action name = `${provider}.${operationId}`. Specs without operationIds get a
  * synthesized name from method + path, which is stable but ugly — curate those.
  */
-export function fromOpenAPI(doc: OpenAPIDoc, opts: { provider: string }): NormalizedSpec {
+export function fromOpenAPI(
+  doc: OpenAPIDoc,
+  opts: { provider: string },
+): NormalizedSpec {
   const operations: SpecOperation[] = [];
 
   for (const [path, item] of Object.entries(doc.paths)) {
@@ -49,7 +57,8 @@ export function fromOpenAPI(doc: OpenAPIDoc, opts: { provider: string }): Normal
       for (const p of [...shared, ...(op.parameters ?? [])]) {
         const resolved = resolveParam(doc, p);
         if (resolved.in !== "path" && resolved.in !== "query") continue;
-        byKey.set(`${resolved.in}:${resolved.name}`, toParam(resolved)); // op-level overrides path-level
+        // Op-level overrides path-level.
+        byKey.set(`${resolved.in}:${resolved.name}`, toParam(resolved));
       }
 
       operations.push({
@@ -57,15 +66,22 @@ export function fromOpenAPI(doc: OpenAPIDoc, opts: { provider: string }): Normal
         method,
         description: op.summary ?? op.description,
         hasBody: op.requestBody !== undefined,
-        params: [...byKey.values()].sort((a, b) => a.name.localeCompare(b.name)),
+        params: [...byKey.values()].sort((a, b) =>
+          a.name.localeCompare(b.name),
+        ),
         routes: [{ variant: "standard", path }],
       });
     }
   }
 
   operations.sort((a, b) => a.action.localeCompare(b.action));
-  const dupes = operations.filter((o, i) => i > 0 && operations[i - 1]!.action === o.action);
-  if (dupes.length) throw new Error(`duplicate actions: ${dupes.map((d) => d.action).join(", ")}`);
+  const dupes = operations.filter(
+    (o, i) => i > 0 && operations[i - 1]!.action === o.action,
+  );
+  if (dupes.length)
+    throw new Error(
+      `duplicate actions: ${dupes.map((d) => d.action).join(", ")}`,
+    );
 
   return {
     kind: "openapi",
@@ -87,7 +103,11 @@ function resolveParam(doc: OpenAPIDoc, p: OpenAPIParam): OpenAPIParam {
 function toParam(p: OpenAPIParam): ParamSpec {
   const isArray = p.schema?.type === "array";
   const schema = isArray ? p.schema?.items : p.schema;
-  const spec: ParamSpec = { name: p.name, in: p.in as "path" | "query", type: mapType(schema?.type) };
+  const spec: ParamSpec = {
+    name: p.name,
+    in: p.in as "path" | "query",
+    type: mapType(schema?.type),
+  };
   if (p.required || p.in === "path") spec.required = true;
   if (isArray) spec.repeated = true;
   if (schema?.enum?.length) spec.enum = schema.enum.map(String);
@@ -100,6 +120,9 @@ function mapType(t: string | undefined): ParamType {
 }
 
 function synthesizeId(method: string, path: string): string {
-  const parts = path.split("/").filter(Boolean).map((s) => s.replace(/[{}]/g, ""));
+  const parts = path
+    .split("/")
+    .filter(Boolean)
+    .map((s) => s.replace(/[{}]/g, ""));
   return [method.toLowerCase(), ...parts].join("_");
 }

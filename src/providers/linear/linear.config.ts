@@ -1,7 +1,8 @@
 import { defineCodegenConfig } from "../../codegen/config.js";
 
 /**
- * Codegen config for Linear's public GraphQL schema. Review codegen-report.md after any change to schema.graphql.
+ * Codegen config for Linear's public GraphQL schema. Review codegen-report.md
+ * after any change to schema.graphql.
  */
 export default defineCodegenConfig({
   provider: "linear",

@@ -11,17 +11,26 @@ export interface SeenRequest {
 }
 
 /**
- * A local HTTP server standing in for a provider API. Point the provider at it with
- * `upstream: up.url`; the gateway then makes real HTTP calls, and `seen` records them.
+ * A local HTTP server standing in for a provider API. Point the provider at it
+ * with `upstream: up.url`; the gateway then makes real HTTP calls, and `seen`
+ * records them.
  */
-export async function fakeUpstream(respond: (req: SeenRequest) => Response | Promise<Response> = () => Response.json({})) {
+export async function fakeUpstream(
+  respond: (req: SeenRequest) => Response | Promise<Response> = () =>
+    Response.json({}),
+) {
   const seen: SeenRequest[] = [];
   const server = serve({
     port: 0,
     hostname: "127.0.0.1",
     fetch: async (req) => {
       const url = new URL(req.url);
-      const record = { path: url.pathname + url.search, method: req.method, headers: Object.fromEntries(req.headers), body: await req.text() };
+      const record = {
+        path: url.pathname + url.search,
+        method: req.method,
+        headers: Object.fromEntries(req.headers),
+        body: await req.text(),
+      };
       seen.push(record);
       return respond(record);
     },

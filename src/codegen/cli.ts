@@ -4,7 +4,7 @@
  *
  *   tsx src/codegen/cli.ts <config.ts> [--fetch] [--check]
  *
- *   --fetch  download the spec from `source.url` and overwrite the pinned file first
+ *   --fetch  download the spec from `source.url`, overwrite the pinned file
  *   --check  fail if generated output differs from what's on disk (for CI)
  */
 import { readFile, writeFile } from "node:fs/promises";
@@ -19,18 +19,25 @@ import { fromOpenAPI, type OpenAPIDoc } from "./openapi.js";
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const configPath = args.find((a) => !a.startsWith("--"));
-  if (!configPath) throw new Error("usage: waterlock-gen <config.ts> [--fetch] [--check]");
+  if (!configPath)
+    throw new Error("usage: waterlock-gen <config.ts> [--fetch] [--check]");
 
   const absConfig = resolve(configPath);
-  const config = ((await import(pathToFileURL(absConfig).href)) as { default: CodegenConfig }).default;
+  const config = (
+    (await import(pathToFileURL(absConfig).href)) as { default: CodegenConfig }
+  ).default;
   const dir = dirname(absConfig);
   const specFile = resolve(dir, config.source.file);
 
   if (args.includes("--fetch")) {
-    if (!config.source.url) throw new Error("--fetch needs source.url in config");
+    if (!config.source.url)
+      throw new Error("--fetch needs source.url in config");
     const res = await fetch(config.source.url);
     if (!res.ok) throw new Error(`fetch ${config.source.url}: ${res.status}`);
-    const text = config.source.kind === "graphql" ? await res.text() : JSON.stringify(await res.json(), null, 2) + "\n";
+    const text =
+      config.source.kind === "graphql"
+        ? await res.text()
+        : JSON.stringify(await res.json(), null, 2) + "\n";
     await writeFile(specFile, text);
     console.log(`pinned spec updated: ${specFile}`);
   }

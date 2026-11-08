@@ -8,7 +8,10 @@ export interface GenerateResult {
   table: OperationTable;
 }
 
-export function generate(spec: NormalizedSpec, config: CodegenConfig): GenerateResult {
+export function generate(
+  spec: NormalizedSpec,
+  config: CodegenConfig,
+): GenerateResult {
   const operations: Operation[] = spec.operations.flatMap((op) =>
     op.routes.map((route) => ({
       action: op.action,
@@ -33,13 +36,21 @@ export function generate(spec: NormalizedSpec, config: CodegenConfig): GenerateR
     operations,
   };
 
-  return { code: emitCode(spec, config, table), report: emitReport(spec, config, operations), table };
+  return {
+    code: emitCode(spec, config, table),
+    report: emitReport(spec, config, operations),
+    table,
+  };
 }
 
 // ---------------------------------------------------------------------------
 // TS emitter. One operation per line so spec updates produce readable diffs.
 
-function emitCode(spec: NormalizedSpec, config: CodegenConfig, table: OperationTable): string {
+function emitCode(
+  spec: NormalizedSpec,
+  config: CodegenConfig,
+  table: OperationTable,
+): string {
   const P = config.typePrefix;
   const actions = spec.operations.map((o) => o.action);
   const tableName = `${config.provider}Table`;
@@ -54,7 +65,10 @@ function emitCode(spec: NormalizedSpec, config: CodegenConfig, table: OperationT
     `import type { OperationTable } from ${JSON.stringify(typesImport)};`,
     ``,
     `export type ${P}Action =`,
-    ...actions.map((a, i) => `  | ${JSON.stringify(a)}${i === actions.length - 1 ? ";" : ""}`),
+    ...actions.map(
+      (a, i) =>
+        `  | ${JSON.stringify(a)}${i === actions.length - 1 ? ";" : ""}`,
+    ),
     ``,
     `/** Typed path + query params per action, as seen by policy rules. */`,
     `export interface ${P}Params {`,
@@ -102,7 +116,11 @@ function tsType(p: ParamSpec): string {
 // ---------------------------------------------------------------------------
 // Review report: what a human must look at when the spec changes.
 
-function emitReport(spec: NormalizedSpec, config: CodegenConfig, ops: Operation[]): string {
+function emitReport(
+  spec: NormalizedSpec,
+  config: CodegenConfig,
+  ops: Operation[],
+): string {
   const lines: string[] = [];
   const variants = ops.filter((o) => o.variant !== "standard");
   lines.push(
@@ -116,8 +134,12 @@ function emitReport(spec: NormalizedSpec, config: CodegenConfig, ops: Operation[
     ``,
   );
   for (const o of spec.operations) {
-    const extra = o.routes.filter((r) => r.variant !== "standard").map((r) => `+${r.variant}`);
-    lines.push(`- \`${o.action}\` ${o.method} \`${o.routes[0]!.path}\`${extra.length ? ` ${extra.join(" ")}` : ""}`);
+    const extra = o.routes
+      .filter((r) => r.variant !== "standard")
+      .map((r) => `+${r.variant}`);
+    lines.push(
+      `- \`${o.action}\` ${o.method} \`${o.routes[0]!.path}\`${extra.length ? ` ${extra.join(" ")}` : ""}`,
+    );
   }
   lines.push(``);
 
@@ -129,7 +151,8 @@ function emitReport(spec: NormalizedSpec, config: CodegenConfig, ops: Operation[
       `so policy applies, but body decoders only handle the standard variant.`,
       ``,
     );
-    for (const v of variants) lines.push(`- \`${v.action}\` ${v.variant}: ${v.method} \`${v.path}\``);
+    for (const v of variants)
+      lines.push(`- \`${v.action}\` ${v.variant}: ${v.method} \`${v.path}\``);
     lines.push(``);
   }
 
