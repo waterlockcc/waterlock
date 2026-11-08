@@ -1,0 +1,9 @@
+{
+  "name": "ai-sdk-linear-triage-fake-linear",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx index.ts",
+    "check": "tsx check.ts"
+  }
+}

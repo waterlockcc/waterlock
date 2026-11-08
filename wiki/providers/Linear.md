@@ -13,3 +13,5 @@ linear({ credentials: staticToken({ token: process.env.LINEAR_TOKEN! }) }); // a
 // harness: stock SDK, gateway as apiUrl, session token as accessToken
 new LinearClient({ accessToken: token, apiUrl: "http://127.0.0.1:8787/graphql" });
 ```
+
+Runnable example against a fake Linear with seed data: [examples/ai-sdk-linear-triage](https://github.com/waterlockcc/waterlock/tree/main/examples/ai-sdk-linear-triage).
