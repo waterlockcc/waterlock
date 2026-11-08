@@ -2,7 +2,8 @@
 
 ```sh
 pnpm add @waterlock/gateway
-pnpm add zod   # only if you use @waterlock/gateway/checks
+pnpm add zod      # only if you use @waterlock/gateway/checks
+pnpm add graphql  # only for GraphQL providers (Linear)
 ```
 
 Node 24+.
@@ -96,3 +97,33 @@ gmail({
 ```
 
 Full runnable example: [examples/ai-sdk-send-email](https://github.com/waterlockcc/waterlock/tree/main/examples/ai-sdk-send-email).
+
+## Actions
+
+Every call is one action. Rules match `r.action` and `r.params`.
+
+| Spec | Action | `r.params` |
+|---|---|---|
+| Discovery (Google) | method id: `gmail.users.messages.send` | path + query params |
+| OpenAPI | `<provider>.<operationId>` | path + query params |
+| GraphQL | top-level field: `linear.mutation.issueCreate` | field arguments, schema defaults filled in |
+
+**GraphQL limitation:** only the top-level field is checked, not nested selections.
+
+- Mutations: the selection only shapes the response, so the action covers the write.
+- Queries: an allowed query can read anything reachable from its field, e.g. `issue { team { members { email } } }`. Reads are limited by the upstream token's scopes, not by policy.
+- One operation and one top-level field per request. Batches, subscriptions and persisted queries are rejected.
+
+## Linear (GraphQL)
+
+```ts
+import { linear } from "@waterlock/gateway/providers/linear";
+
+linear({ credentials: staticToken({ token: process.env.LINEAR_TOKEN! }) }); // auth: "apiKey" for a personal API key
+
+// rule
+{ when: (r) => r.action === "linear.mutation.issueCreate" && r.params.input.teamId === TEAM_ID }
+
+// harness: stock SDK, gateway as apiUrl, session token as accessToken
+new LinearClient({ accessToken: token, apiUrl: "http://127.0.0.1:8787/graphql" });
+```

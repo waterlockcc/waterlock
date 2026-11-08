@@ -13,6 +13,7 @@ import { pathToFileURL } from "node:url";
 import type { CodegenConfig } from "./config.js";
 import { fromDiscovery, type DiscoveryDoc } from "./discovery.js";
 import { generate } from "./generate.js";
+import { generateGraphql } from "./graphql.js";
 import { fromOpenAPI, type OpenAPIDoc } from "./openapi.js";
 
 async function main(): Promise<void> {
@@ -29,17 +30,29 @@ async function main(): Promise<void> {
     if (!config.source.url) throw new Error("--fetch needs source.url in config");
     const res = await fetch(config.source.url);
     if (!res.ok) throw new Error(`fetch ${config.source.url}: ${res.status}`);
-    await writeFile(specFile, JSON.stringify(await res.json(), null, 2) + "\n");
+    const text = config.source.kind === "graphql" ? await res.text() : JSON.stringify(await res.json(), null, 2) + "\n";
+    await writeFile(specFile, text);
     console.log(`pinned spec updated: ${specFile}`);
   }
 
-  const doc = JSON.parse(await readFile(specFile, "utf8"));
-  const spec =
-    config.source.kind === "discovery"
-      ? fromDiscovery(doc as DiscoveryDoc)
-      : fromOpenAPI(doc as OpenAPIDoc, { provider: config.provider });
-
-  const { code, report, table } = generate(spec, config);
+  const source = await readFile(specFile, "utf8");
+  let code: string;
+  let report: string;
+  let summary: string;
+  if (config.source.kind === "graphql") {
+    const result = await generateGraphql(source, config);
+    ({ code, report } = result);
+    summary = `${result.table.fields.length} actions`;
+  } else {
+    const doc = JSON.parse(source);
+    const spec =
+      config.source.kind === "discovery"
+        ? fromDiscovery(doc as DiscoveryDoc)
+        : fromOpenAPI(doc as OpenAPIDoc, { provider: config.provider });
+    const result = generate(spec, config);
+    ({ code, report } = result);
+    summary = `${spec.operations.length} actions, ${result.table.operations.length} routes`;
+  }
   const outFile = resolve(dir, config.out);
   const reportFile = config.report ? resolve(dir, config.report) : undefined;
 
@@ -56,9 +69,7 @@ async function main(): Promise<void> {
   await writeFile(outFile, code);
   if (reportFile) await writeFile(reportFile, report);
 
-  console.log(
-    `${config.provider}: ${spec.operations.length} actions, ${table.operations.length} routes -> ${outFile}`,
-  );
+  console.log(`${config.provider}: ${summary} -> ${outFile}`);
   if (reportFile) console.log(`  review: ${reportFile}`);
 }
 

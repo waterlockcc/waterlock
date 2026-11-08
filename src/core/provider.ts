@@ -1,6 +1,6 @@
 import type { Credential, CredentialSource } from "./credentials.js";
 import type { AnyRequest } from "./policy.js";
-import type { OperationTable } from "./types.js";
+import type { GraphqlMatcher, OperationTable } from "./types.js";
 
 /**
  * Extracts policy-relevant fields from a request body. Throwing denies the
@@ -14,10 +14,16 @@ export interface ProviderDefinition<R extends AnyRequest = AnyRequest> {
   id: string;
   /** Fixed upstream origin. The harness can never choose the host. */
   upstream: string;
-  table: OperationTable;
+  /** REST operations, matched on method + path. Omit for GraphQL-only providers. */
+  table?: OperationTable;
   /** Spec-level query params (e.g. Google's `fields`, `alt`) allowed on every call. Anything else unlisted is denied. */
-  allowedGlobalQueryParams: readonly string[];
-  /** Per-action body decoders. Only run on the standard route; upload variants of decoded actions are denied. */
+  allowedGlobalQueryParams?: readonly string[];
+  /**
+   * GraphQL endpoint (e.g. `/graphql`). Requests to it are matched on the body: the top-level
+   * field is the action. Build `matcher` with `createGraphqlMatcher` from `@waterlock/gateway/graphql`.
+   */
+  graphql?: { endpoint: string; matcher: GraphqlMatcher };
+  /** Per-action body decoders (REST only). Only run on the standard route; upload variants of decoded actions are denied. */
   decoders?: Partial<Record<string, Decoder>>;
   credentials: CredentialSource;
   /** Default: `Authorization: Bearer <token>`. */
