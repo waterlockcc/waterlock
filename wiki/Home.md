@@ -21,6 +21,8 @@ really broad permissions. What waterlock gives you
   more variable approach to integration.
 - You own the ai layer, use ai-sdk, direct Anthropic's ai is fine as well. Waterlock just works.
 
+## Navigate
+
 - [Install](Install)
 - [Quickstart](Quickstart)
 - [Actions](Actions): how calls map to rules (Discovery, OpenAPI, GraphQL)
