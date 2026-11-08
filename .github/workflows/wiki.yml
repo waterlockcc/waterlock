@@ -2,7 +2,8 @@ name: Wiki
 
 # wiki/ in this repo is the source of the GitHub wiki. Merging a change to it on main
 # mirrors the folder into the wiki repo (<repo>.wiki.git), so edits made in the wiki UI
-# are overwritten: edit wiki/ instead. wiki/Home.md is the wiki's landing page.
+# are overwritten: edit wiki/ instead. wiki/Home.md is the landing page, wiki/_Sidebar.md the nav.
+# Folders only organize the source: page URLs use the file name, so file names must be unique.
 #
 # The wiki repo only exists after its first page is created in the GitHub UI (once).
 on:

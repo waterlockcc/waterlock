@@ -43,3 +43,18 @@ export interface OperationTable {
   globalQueryParams: readonly ParamSpec[];
   operations: readonly Operation[];
 }
+
+export type GraphqlMatchResult =
+  | {
+      ok: true;
+      action: string;
+      /** Arguments of the top-level field: variables filled in, coerced to the schema, defaults applied. */
+      params: Record<string, unknown>;
+      /** JSON body to forward: the parsed document re-printed, so upstream runs exactly what was checked. */
+      body: string;
+    }
+  | { ok: false; status: 400 | 404; reason: string };
+
+export interface GraphqlMatcher {
+  match(body: Uint8Array): GraphqlMatchResult;
+}

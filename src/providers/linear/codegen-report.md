@@ -1,0 +1,586 @@
+# linear codegen report
+
+Source: Linear API GraphQL schema
+
+- 574 actions: 391 mutations, 183 queries
+- Nested selections are not governed: an allowed query can read anything reachable from its field.
+
+## Mutations
+
+- `linear.mutation.agentActivityCreate` Creates an agent activity.
+- `linear.mutation.agentActivityCreatePrompt` [Internal] Creates a prompt agent activity from Linear user input.
+- `linear.mutation.agentActivityDeleteQueued` [Internal] Deletes a queued prompt activity, removing it from the queue.
+- `linear.mutation.agentActivitySendQueued` [Internal] Immediately sends a queued prompt activity to the agent, bypassing the queue.
+- `linear.mutation.agentSessionCreate` [Internal] Creates a new agent session on behalf of the current user
+- `linear.mutation.agentSessionCreateOnComment` Creates a new agent session on a root comment.
+- `linear.mutation.agentSessionCreateOnIssue` Creates a new agent session on an issue.
+- `linear.mutation.agentSessionRestartWithDefaultModel` [Internal] Restarts a routed coding session with the default model.
+- `linear.mutation.agentSessionUpdate` Updates an agent session.
+- `linear.mutation.agentSessionUpdateExternalUrl` Updates the externalUrl of an agent session, which is an agent-hosted page associated with this session.
+- `linear.mutation.agentSkillCreate` Creates an agent skill.
+- `linear.mutation.agentSkillDelete` Deletes an agent skill.
+- `linear.mutation.agentSkillUpdate` Updates an agent skill.
+- `linear.mutation.airbyteIntegrationConnect` Creates an integration api key for Airbyte to connect with Linear.
+- `linear.mutation.attachmentCreate` Creates a new attachment, or updates existing if the same `url` and `issueId` is used. To create an integration-aware attachment, use the integration-specific mutations such as `attachmentLinkZendesk`, `attachmentLinkSlack`, or `attachmentLinkURL` instead.
+- `linear.mutation.attachmentDelete` Deletes an issue attachment.
+- `linear.mutation.attachmentLinkDiscord` Link an existing Discord message to an issue. This creates a rich attachment using the workspace's Discord integration.
+- `linear.mutation.attachmentLinkFront` Link an existing Front conversation to an issue. This creates a rich attachment using the workspace's Front integration, enabling features like automated conversation updates.
+- `linear.mutation.attachmentLinkGitHubIssue` Link a GitHub issue to a Linear issue. This creates a rich attachment using the workspace's GitHub integration, enabling features like automated status syncing.
+- `linear.mutation.attachmentLinkGitHubPR` Link a GitHub pull request to an issue. This creates a rich attachment using the workspace's GitHub integration, enabling features like automated status syncing.
+- `linear.mutation.attachmentLinkGitLabMR` Link an existing GitLab MR to an issue. This creates a rich attachment using the workspace's GitLab integration, enabling features like automated status syncing.
+- `linear.mutation.attachmentLinkIntercom` Link an existing Intercom conversation to an issue. This creates a rich attachment using the workspace's Intercom integration, enabling features like automated conversation updates.
+- `linear.mutation.attachmentLinkJiraIssue` Link an existing Jira issue to an issue. This creates a rich attachment using the workspace's Jira integration, enabling features like automated status syncing.
+- `linear.mutation.attachmentLinkSalesforce` Link an existing Salesforce case to an issue. This creates a rich attachment using the workspace's Salesforce integration.
+- `linear.mutation.attachmentLinkSlack` Link an existing Slack message to an issue. This creates a rich attachment using the workspace's Slack integration.
+- `linear.mutation.attachmentLinkURL` Link any URL to an issue. If the workspace has a matching integration configured and the URL is recognized (e.g., Zendesk, GitHub, Slack), a rich attachment will be created that enables features like automated status updates. Otherwise, a basic attachment is created.
+- `linear.mutation.attachmentLinkZendesk` Link an existing Zendesk ticket to an issue. This creates a rich attachment using the workspace's Zendesk integration, enabling features like automated ticket reopening when the Linear issue is completed.
+- `linear.mutation.attachmentSyncToSlack` Begin syncing the thread for an existing Slack message attachment with a comment thread on its issue.
+- `linear.mutation.attachmentUpdate` Updates an existing issue attachment.
+- `linear.mutation.commentCreate` Creates a new comment.
+- `linear.mutation.commentDelete` Deletes a comment.
+- `linear.mutation.commentResolve` Resolves a comment thread. Marks the root comment as resolved by the current user.
+- `linear.mutation.commentUnresolve` Unresolves a previously resolved comment thread. Clears the resolved state on the root comment.
+- `linear.mutation.commentUpdate` Updates a comment.
+- `linear.mutation.contactCreate` Creates a support contact message from an authenticated user. The message is saved and forwarded to Intercom for support handling.
+- `linear.mutation.contactSalesCreate` [INTERNAL] Submits a sales pricing inquiry from the website. Small companies (1-19 employees) are routed to Intercom, while larger companies are routed to HubSpot.
+- `linear.mutation.createCsvExportReport` Creates a CSV export report for the workspace. The report is generated asynchronously and delivered via email. Requires workspace admin export permission.
+- `linear.mutation.createInitiativeUpdateReminder` Create a notification to remind a user about an initiative update.
+- `linear.mutation.createOrganizationFromOnboarding` Creates a new workspace from onboarding.
+- `linear.mutation.createProjectUpdateReminder` Create a notification to remind a user about a project update.
+- `linear.mutation.customViewCreate` Creates a new custom view.
+- `linear.mutation.customViewDelete` Deletes a custom view.
+- `linear.mutation.customViewUpdate` Updates a custom view.
+- `linear.mutation.customerCreate` Creates a new customer.
+- `linear.mutation.customerDelete` Deletes a customer.
+- `linear.mutation.customerMerge` Merges two customers by transferring all needs from the source customer to the target customer. The source customer is archived after the merge. Domains, external IDs, and metadata are combined on the target customer.
+- `linear.mutation.customerNeedArchive` Archives a customer need.
+- `linear.mutation.customerNeedCreate` Creates a new customer need.
+- `linear.mutation.customerNeedCreateFromAttachment` Creates a new customer need from an existing issue attachment. If the attachment already has an archived need, it will be unarchived instead of creating a duplicate.
+- `linear.mutation.customerNeedDelete` Deletes a customer need.
+- `linear.mutation.customerNeedUnarchive` Unarchives a customer need.
+- `linear.mutation.customerNeedUpdate` Updates an existing customer need. Supports moving the need to a different issue or project, changing priority, updating the body content, and managing the attached source URL.
+- `linear.mutation.customerStatusCreate` Creates a new customer status.
+- `linear.mutation.customerStatusDelete` Deletes a customer status. Cannot delete the last remaining status in a workspace, and the status must not be in use by any customers.
+- `linear.mutation.customerStatusUpdate` Updates a customer status.
+- `linear.mutation.customerTierCreate` Creates a new customer tier.
+- `linear.mutation.customerTierDelete` Deletes a customer tier. The tier must not be in use by any customers.
+- `linear.mutation.customerTierUpdate` Updates a customer tier.
+- `linear.mutation.customerUnsync` Unsyncs a managed customer from its current data source integration. External IDs mapping to the external source will be cleared, and the customer will no longer be updated by the integration.
+- `linear.mutation.customerUpdate` Updates an existing customer.
+- `linear.mutation.customerUpsert` Upserts a customer, creating it if no match is found, or updating it otherwise. Matches against existing customers using `id`, `externalId`, `slackChannelId`, or `domains`.
+- `linear.mutation.cycleArchive` Archives a cycle. All issues currently assigned to the cycle are unlinked from it before archiving.
+- `linear.mutation.cycleCreate` Creates a new cycle.
+- `linear.mutation.cycleShiftAll` Shifts all cycles starts and ends by a certain number of days, starting from the provided cycle onwards.
+- `linear.mutation.cycleStartUpcomingCycleToday` Starts the upcoming cycle as of midnight today. Completes the previous cycle if it has not yet ended. Only the next upcoming (not yet started) cycle for the team can be started.
+- `linear.mutation.cycleUpdate` Updates a cycle.
+- `linear.mutation.documentCreate` Creates a new document.
+- `linear.mutation.documentDelete` Deletes (trashes) a document. The document is marked as trashed and archived, but not permanently removed.
+- `linear.mutation.documentShare` [Internal] Shares a document and its sub-documents with workspace members at a role. On a personal document only the owner can share it. On any other document the owner, an owner of one of its teams, or a workspace admin can, the people must be able to see the document, and the role must be above its general access. New collaborators are subscribed to the document. Users who already have another role move to the given one.
+- `linear.mutation.documentUnarchive` Restores a previously trashed document by unarchiving it.
+- `linear.mutation.documentUnshare` [Internal] Stops sharing a document and its sub-documents with users. Whoever can manage access to the document can remove any collaborator; a collaborator can only remove themselves.
+- `linear.mutation.documentUpdate` Updates a document.
+- `linear.mutation.documentUpdateCollaboratorRole` [Internal] Changes the role of users a document is shared with. On a personal document only the owner can change roles. On any other document the owner, an owner of one of its teams, or a workspace admin can, and the role must be above its general access. Only users who already collaborate on the document change; no one is added. With applyToSubDocuments, sub-documents where a user has the role they had on this document before the change are also changed.
+- `linear.mutation.documentUpdateGeneralAccess` [Internal] Changes what users other than the owner can do with a document that is not personal: edit, comment, or view. Only the owner of the document, an owner of one of its teams, or a workspace admin can change it. Comment and view need an owner who can access the document.
+- `linear.mutation.emailIntakeAddressCreate` Creates a new email intake address.
+- `linear.mutation.emailIntakeAddressDelete` Deletes an email intake address object.
+- `linear.mutation.emailIntakeAddressRefreshSesDomainStatus` Requests an immediate, on-demand SES domain verification status check for an email intake address and keeps it in the frequent (per-minute) check lane for a short window. Use when a user is actively configuring their custom sending domain so authorization converges quickly instead of waiting for the once-a-day lane.
+- `linear.mutation.emailIntakeAddressRotate` Rotates an existing email intake address.
+- `linear.mutation.emailIntakeAddressUpdate` Updates an existing email intake address.
+- `linear.mutation.emailTokenUserAccountAuth` Authenticates a user account via email and authentication token.
+- `linear.mutation.emailUnsubscribe` Unsubscribes the user from one type of email.
+- `linear.mutation.emailUserAccountAuthChallenge` Finds or creates a new user account by email and sends an email with token.
+- `linear.mutation.emojiCreate` Creates a custom emoji.
+- `linear.mutation.emojiDelete` Deletes an emoji.
+- `linear.mutation.entityExternalLinkCreate` Creates a new external link on an initiative, project, team, release, or cycle.
+- `linear.mutation.entityExternalLinkDelete` Deletes an entity external link.
+- `linear.mutation.entityExternalLinkUpdate` Updates an existing entity external link's URL, label, or sort order.
+- `linear.mutation.favoriteCreate` Creates a new favorite for the authenticated user. Exactly one target entity must be specified. If a favorite for the same entity already exists, the existing favorite is returned (upsert behavior).
+- `linear.mutation.favoriteDelete` Deletes a favorite, removing it from the user's sidebar. This is an idempotent operation -- deleting a non-existent favorite succeeds silently.
+- `linear.mutation.favoriteUpdate` Updates a favorite's position, parent folder, or folder name.
+- `linear.mutation.fileUpload` XHR request payload to upload an images, video and other attachments directly to Linear's cloud storage.
+- `linear.mutation.fileUploadDangerouslyDelete` [INTERNAL] Permanently delete an uploaded file by asset URL. This should be used as a last resort and will break comments and documents that reference the asset.
+- `linear.mutation.gitAutomationStateCreate` Creates a new Git automation rule that maps a Git event to a workflow state transition for a team.
+- `linear.mutation.gitAutomationStateDelete` Deletes a Git automation rule.
+- `linear.mutation.gitAutomationStateUpdate` Updates an existing Git automation rule, including its workflow state, target branch, and triggering event.
+- `linear.mutation.gitAutomationTargetBranchCreate` Creates a new Git target branch definition that scopes automation rules to pull requests targeting a specific branch pattern.
+- `linear.mutation.gitAutomationTargetBranchDelete` Deletes a Git target branch definition and its associated automation rules.
+- `linear.mutation.gitAutomationTargetBranchUpdate` Updates an existing Git target branch definition, including its branch pattern and regex flag.
+- `linear.mutation.googleUserAccountAuth` Authenticate user account through Google OAuth. This is the 2nd step of OAuth flow.
+- `linear.mutation.imageUploadFromUrl` Upload an image from an URL to Linear.
+- `linear.mutation.importFileUpload` XHR request payload to upload a file for import, directly to Linear's cloud storage.
+- `linear.mutation.inboxNotificationUpdate` Updates a notification in the authenticated user's inbox using inbox grouping behavior.
+- `linear.mutation.initiativeAddLabel` Adds a label to an initiative.
+- `linear.mutation.initiativeArchive` Archives an initiative.
+- `linear.mutation.initiativeCreate` Creates a new initiative.
+- `linear.mutation.initiativeDelete` Deletes (trashes) an initiative.
+- `linear.mutation.initiativeLabelCreate` Creates a new initiative label.
+- `linear.mutation.initiativeLabelDelete` Deletes an initiative label.
+- `linear.mutation.initiativeLabelRestore` Restores a previously retired initiative label, making it available for use on new initiatives.
+- `linear.mutation.initiativeLabelRetire` Retires an initiative label. Retired labels remain on existing initiatives but cannot be applied to new ones.
+- `linear.mutation.initiativeLabelUpdate` Updates an initiative label.
+- `linear.mutation.initiativeLeadTeamUpdate` [Internal] Updates an initiative's lead team, optionally applying it to matching editable sub-initiatives.
+- `linear.mutation.initiativeRelationCreate` Creates a new parent-child relation between two initiatives. The relation cannot create cycles or exceed maximum nesting depth.
+- `linear.mutation.initiativeRelationDelete` Deletes an initiative relation.
+- `linear.mutation.initiativeRelationUpdate` Updates an initiative relation.
+- `linear.mutation.initiativeRemoveLabel` Removes a label from an initiative.
+- `linear.mutation.initiativeToProjectCreate` Associates a project with an initiative. A project can only appear once in an initiative hierarchy.
+- `linear.mutation.initiativeToProjectDelete` Removes a project from an initiative.
+- `linear.mutation.initiativeToProjectUpdate` Updates an initiative-to-project association, such as its sort order.
+- `linear.mutation.initiativeUnarchive` Unarchives an initiative.
+- `linear.mutation.initiativeUpdate` Updates an initiative.
+- `linear.mutation.initiativeUpdateArchive` Archives an initiative update.
+- `linear.mutation.initiativeUpdateCreate` Creates an initiative update.
+- `linear.mutation.initiativeUpdateUnarchive` Unarchives an initiative update.
+- `linear.mutation.initiativeUpdateUpdate` Updates an initiative update.
+- `linear.mutation.integrationArchive` Archives an integration.
+- `linear.mutation.integrationAsksConnectChannel` Connect a Slack channel to Asks.
+- `linear.mutation.integrationCustomerDataAttributesRefresh` [INTERNAL] Refreshes the customer data attributes from the specified integration service.
+- `linear.mutation.integrationDatadogConnect` [Internal] Connects Datadog feature flags to the workspace.
+- `linear.mutation.integrationDatadogEnvironments` [Internal] Lists Datadog environments available to connect.
+- `linear.mutation.integrationDelete` Deletes an integration.
+- `linear.mutation.integrationDiscord` Integrates the workspace with Discord.
+- `linear.mutation.integrationFigma` Integrates the workspace with Figma.
+- `linear.mutation.integrationFront` Integrates the workspace with Front.
+- `linear.mutation.integrationGitHubEnterpriseServerConnect` Connects the workspace with a GitHub Enterprise Server.
+- `linear.mutation.integrationGitHubPersonal` Connect your GitHub account to Linear.
+- `linear.mutation.integrationGithubCommitCreate` Generates a webhook for the GitHub commit integration.
+- `linear.mutation.integrationGithubConnect` Connects the workspace with the GitHub App.
+- `linear.mutation.integrationGithubImportConnect` Connects the workspace with the GitHub Import App.
+- `linear.mutation.integrationGithubImportRefresh` Refreshes the data for a GitHub import integration.
+- `linear.mutation.integrationGithubRemoveCodeAccess` Removes code access from a GitHub integration, downgrading to the basic GitHub App.
+- `linear.mutation.integrationGitlabConnect` Connects the workspace with a GitLab Access Token.
+- `linear.mutation.integrationGitlabRotate` Rotates the GitLab token, revoking the previous token and saving its replacement.
+- `linear.mutation.integrationGitlabTestConnection` Tests connectivity to a self-hosted GitLab instance and clears auth errors if successful.
+- `linear.mutation.integrationGitlabUpdateRotationSettings` Enables or disables automatic self-rotation of the GitLab token.
+- `linear.mutation.integrationGitlabUpdateToken` Replaces the GitLab access token while preserving the connected host and webhook.
+- `linear.mutation.integrationGong` Integrates the workspace with Gong.
+- `linear.mutation.integrationGoogleCalendarPersonalConnect` [Internal] Connects the Google Calendar to the user to this Linear account via OAuth2.
+- `linear.mutation.integrationGoogleSheets` Integrates the workspace with Google Sheets.
+- `linear.mutation.integrationIntercom` Integrates the workspace with Intercom.
+- `linear.mutation.integrationIntercomDelete` Disconnects the workspace from Intercom.
+- `linear.mutation.integrationIntercomSettingsUpdate` [DEPRECATED] Updates settings on the Intercom integration.
+- `linear.mutation.integrationJiraFetchProjectStatuses` [INTERNAL] Fetches Jira project statuses for the status mapping settings UI.
+- `linear.mutation.integrationJiraPersonal` Connect your Jira account to Linear.
+- `linear.mutation.integrationJiraUpdate` [INTERNAL] Updates a Jira Integration.
+- `linear.mutation.integrationLaunchDarklyConnect` [INTERNAL] Integrates the workspace with LaunchDarkly.
+- `linear.mutation.integrationLaunchDarklyPersonalConnect` [INTERNAL] Integrates your personal account with LaunchDarkly.
+- `linear.mutation.integrationLoom` Enables Loom integration for the workspace.
+- `linear.mutation.integrationMcpServerConnect` [INTERNAL] Connects the workspace with an MCP server.
+- `linear.mutation.integrationMcpServerPersonalConnect` [INTERNAL] Connects the user's personal account with an MCP server.
+- `linear.mutation.integrationMicrosoftPersonalConnect` Connects the user's personal Microsoft account to Linear.
+- `linear.mutation.integrationMicrosoftTeams` Integrates the workspace with Microsoft Teams.
+- `linear.mutation.integrationMicrosoftTeamsProjectPost` [Internal] Connect a project to a Microsoft Teams channel. Find-or-update semantics: creates a microsoftTeamsProjectPost integration row if none exists for the project, or overwrites the existing one's team/channel selection. Requires the connecting user to have linked their personal Microsoft account.
+- `linear.mutation.integrationOpsgenieConnect` [INTERNAL] Integrates the workspace with Opsgenie.
+- `linear.mutation.integrationOpsgenieRefreshScheduleMappings` [INTERNAL] Refresh Opsgenie schedule mappings.
+- `linear.mutation.integrationOriginConnect` [Internal] Completes the Origin app installation so the workspace receives Origin webhooks.
+- `linear.mutation.integrationOriginConnectInstallation` [Internal] Connects an Origin installation that started on Origin, after the workspace admin who installed it confirms.
+- `linear.mutation.integrationPagerDutyConnect` [INTERNAL] Integrates the workspace with PagerDuty.
+- `linear.mutation.integrationPagerDutyRefreshScheduleMappings` [INTERNAL] Refresh PagerDuty schedule mappings.
+- `linear.mutation.integrationRequest` Requests a currently unavailable integration.
+- `linear.mutation.integrationSalesforce` Integrates the workspace with Salesforce.
+- `linear.mutation.integrationSalesforceMetadataRefresh` [INTERNAL] Refreshes the Salesforce integration metadata.
+- `linear.mutation.integrationSentryConnect` Integrates the workspace with Sentry.
+- `linear.mutation.integrationSettingsUpdate` [INTERNAL] Updates the integration settings.
+- `linear.mutation.integrationSlack` Integrates the workspace with Slack.
+- `linear.mutation.integrationSlackAsks` Integrates the workspace with the Slack Asks app.
+- `linear.mutation.integrationSlackCustomViewNotifications` Slack integration for custom view notifications.
+- `linear.mutation.integrationSlackCustomerChannelLink` Integrates a Slack Asks channel with a Customer.
+- `linear.mutation.integrationSlackImportEmojis` Imports custom emojis from your Slack workspace.
+- `linear.mutation.integrationSlackInitiativePost` [Internal] Slack integration for initiative notifications.
+- `linear.mutation.integrationSlackOrAsksUpdateSlackTeamName` Updates the Slack team's name in Linear for an existing Slack or Asks integration.
+- `linear.mutation.integrationSlackOrgInitiativeUpdatesPost` [Internal] Slack integration for workspace-level initiative update notifications.
+- `linear.mutation.integrationSlackOrgProjectUpdatesPost` Slack integration for workspace-level project update notifications.
+- `linear.mutation.integrationSlackPersonal` Integrates your personal notifications with Slack.
+- `linear.mutation.integrationSlackPost` Slack integration for team notifications.
+- `linear.mutation.integrationSlackProjectPost` Slack integration for project notifications.
+- `linear.mutation.integrationSlackWorkflowAccessUpdate` [Internal] Enables Linear Agent Slack workflow access for a Slack or Slack Asks integration.
+- `linear.mutation.integrationTemplateCreate` Creates a new connection between a template and an integration, optionally scoped to a specific external resource such as a Slack channel.
+- `linear.mutation.integrationTemplateDelete` Deletes an integration template connection, removing the link between a template and an integration.
+- `linear.mutation.integrationUpdate` [INTERNAL] Updates the integration.
+- `linear.mutation.integrationZendesk` Integrates the workspace with Zendesk.
+- `linear.mutation.integrationsSettingsCreate` Creates new Slack notification settings for a team, project, initiative, or custom view.
+- `linear.mutation.integrationsSettingsUpdate` Updates Slack notification settings for a team, project, initiative, or custom view.
+- `linear.mutation.issueAddLabel` Adds a label to an issue.
+- `linear.mutation.issueArchive` Archives an issue.
+- `linear.mutation.issueBatchCreate` Creates a list of issues atomically.
+- `linear.mutation.issueBatchUpdate` Updates multiple issues at once.
+- `linear.mutation.issueCreate` Creates a new issue.
+- `linear.mutation.issueDelete` Deletes (trashes) an issue and its sub-issues.
+- `linear.mutation.issueDescriptionUpdateFromFront` [INTERNAL] Updates an issue description from the Front app to handle Front attachments correctly.
+- `linear.mutation.issueExternalSyncDisable` Disables external sync on an issue.
+- `linear.mutation.issueImportCreateAsana` Kicks off an Asana import job.
+- `linear.mutation.issueImportCreateCSVJira` Kicks off a Jira import job from a CSV.
+- `linear.mutation.issueImportCreateClubhouse` Kicks off a Shortcut (formerly Clubhouse) import job.
+- `linear.mutation.issueImportCreateGithub` Kicks off a GitHub import job.
+- `linear.mutation.issueImportCreateJira` Kicks off a Jira import job.
+- `linear.mutation.issueImportCreateLinearV2` [INTERNAL] Kicks off a Linear to Linear import job.
+- `linear.mutation.issueImportDelete` Deletes an import job.
+- `linear.mutation.issueImportProcess` Kicks off import processing.
+- `linear.mutation.issueImportUpdate` Updates the mapping for the issue import.
+- `linear.mutation.issueLabelCreate` Creates a new label.
+- `linear.mutation.issueLabelDelete` Deletes an issue label.
+- `linear.mutation.issueLabelRestore` Restores a previously retired label, making it available for use again.
+- `linear.mutation.issueLabelRetire` Retires a label. Retired labels are still visible but cannot be applied to new issues. Existing issues with the label are not affected.
+- `linear.mutation.issueLabelUpdate` Updates a label.
+- `linear.mutation.issueRelationCreate` Creates a new issue relation.
+- `linear.mutation.issueRelationDelete` Deletes an issue relation.
+- `linear.mutation.issueRelationUpdate` Updates an issue relation.
+- `linear.mutation.issueReminder` Adds an issue reminder. Will cause a notification to be sent when the issue reminder time is reached.
+- `linear.mutation.issueRemoveLabel` Removes a label from an issue.
+- `linear.mutation.issueRequestSolubilityPrediction` [Internal] Requests a coding-agent suitability prediction for an issue without a current one, such as an issue created before predictions existed.
+- `linear.mutation.issueShare` Shares an issue with a user who would not otherwise be able to access it. The viewer must have native access to the issue's full sub-issue tree and permission to share issues in the issue's team. Issues that inherit sharing from a parent issue cannot be shared directly.
+- `linear.mutation.issueSubscribe` Subscribes a user to an issue.
+- `linear.mutation.issueToReleaseCreate` Creates a new association between an issue and a release, linking the issue to the release for tracking purposes.
+- `linear.mutation.issueToReleaseDelete` Deletes an issue-to-release association by its identifier, removing the issue from the release.
+- `linear.mutation.issueToReleaseDeleteByIssueAndRelease` Deletes an issue-to-release association by looking up the issue and release identifiers, removing the issue from the release.
+- `linear.mutation.issueUnarchive` Unarchives an issue.
+- `linear.mutation.issueUnshare` Stops sharing an issue with a user. The viewer must have native access to the issue's full sub-issue tree and permission to share issues in the issue's team. Issues that inherit sharing from a parent issue cannot be unshared directly.
+- `linear.mutation.issueUnsubscribe` Unsubscribes a user from an issue.
+- `linear.mutation.issueUpdate` Updates an issue.
+- `linear.mutation.jiraIntegrationConnect` [INTERNAL] Connects the workspace with a Jira Personal Access Token.
+- `linear.mutation.joinOrganizationFromOnboarding` Join a workspace from onboarding.
+- `linear.mutation.leaveOrganization` Leave a workspace.
+- `linear.mutation.logout` Logout the client.
+- `linear.mutation.logoutAllSessions` Logout all of user's sessions including the active one.
+- `linear.mutation.logoutOtherSessions` Logout all of user's sessions excluding the current one.
+- `linear.mutation.logoutSession` Logout an individual session with its ID.
+- `linear.mutation.notificationArchive` Archives a notification.
+- `linear.mutation.notificationArchiveAll` Archives a notification and all related notifications.
+- `linear.mutation.notificationCategoryChannelSubscriptionUpdate` Subscribes to or unsubscribes from a specific notification category for a given notification channel. For example, subscribe to 'issueAssignment' notifications via the 'email' channel.
+- `linear.mutation.notificationMarkReadAll` Marks notification and all related notifications as read.
+- `linear.mutation.notificationMarkUnreadAll` Marks notification and all related notifications as unread.
+- `linear.mutation.notificationSnoozeAll` Snoozes a notification and all related notifications.
+- `linear.mutation.notificationSubscriptionCreate` Creates a new notification subscription for a specific entity. The subscription determines which notification types the authenticated user will receive for the target entity. Exactly one target entity (customer, custom view, cycle, initiative, label, project, team, or user) must be specified.
+- `linear.mutation.notificationSubscriptionDelete` Deletes a notification subscription reference.
+- `linear.mutation.notificationSubscriptionUpdate` Updates a notification subscription.
+- `linear.mutation.notificationUnarchive` Unarchives a notification.
+- `linear.mutation.notificationUnsnoozeAll` Unsnoozes a notification and all related notifications.
+- `linear.mutation.notificationUpdate` Updates a notification.
+- `linear.mutation.oauthApplicationArchive` [ALPHA] Archives an OAuth application created by the calling OAuth application.
+- `linear.mutation.oauthApplicationCreate` [ALPHA] Creates an OAuth application owned by the calling OAuth application.
+- `linear.mutation.oauthApplicationRotateSecret` [ALPHA] Rotates the client secret for an OAuth application created by the calling OAuth application.
+- `linear.mutation.oauthApplicationRotateWebhookSecret` [ALPHA] Rotates the webhook signing secret for an OAuth application created by the calling OAuth application.
+- `linear.mutation.oauthApplicationUpdate` [ALPHA] Updates an OAuth application created by the calling OAuth application.
+- `linear.mutation.organizationCancelDelete` Cancels a previously requested workspace deletion, if the workspace has not yet been fully deleted.
+- `linear.mutation.organizationCodingInferenceKeyDelete` [Internal] Removes a workspace inference credential and switches the harness to Linear inference.
+- `linear.mutation.organizationCodingInferenceKeyTest` [Internal] Sends a minimal inference request with a workspace credential without saving it.
+- `linear.mutation.organizationCodingInferenceKeyUpdate` [Internal] Tests and stores a workspace inference credential and selects it for new sessions.
+- `linear.mutation.organizationDelete` Permanently deletes the workspace and all its data. Requires a valid deletion code obtained from organizationDeleteChallenge. This action is irreversible.
+- `linear.mutation.organizationDeleteChallenge` Requests a deletion confirmation code for the workspace. The code is sent to the requesting user's email and must be used with the organizationDelete mutation to confirm deletion.
+- `linear.mutation.organizationDomainClaim` [INTERNAL] Verifies a domain claim.
+- `linear.mutation.organizationDomainCreate` [INTERNAL] Adds a domain to be allowed for a workspace.
+- `linear.mutation.organizationDomainDelete` Deletes a domain.
+- `linear.mutation.organizationDomainUpdate` [INTERNAL] Updates a workspace domain's settings.
+- `linear.mutation.organizationDomainVerify` [INTERNAL] Verifies a domain to be added to a workspace.
+- `linear.mutation.organizationInviteCreate` Creates a new workspace invite and sends an invitation email to the specified address. The invite includes a role assignment and optional team memberships.
+- `linear.mutation.organizationInviteDelete` Deletes (archives) a workspace invite, preventing it from being accepted.
+- `linear.mutation.organizationInviteUpdate` Updates an existing workspace invite, such as changing the teams the invitee will be added to.
+- `linear.mutation.organizationStartTrial` [DEPRECATED] Starts a trial for the workspace.
+- `linear.mutation.organizationStartTrialForPlan` Starts a trial for the workspace on the specified plan type. The workspace must not already be on a paid plan or in an active trial.
+- `linear.mutation.organizationUpdate` Updates the user's workspace settings. Different settings require different permission levels; most require the workspaceSettings admin permission.
+- `linear.mutation.originInstallationCancel` [Internal] Removes Linear's app from an Origin installation that started on Origin and that no workspace connected.
+- `linear.mutation.partnerApplicationCreate` [INTERNAL] Submits a Startup Program partner application from the website, creating a triage issue for the startup team.
+- `linear.mutation.partnerOfferRedeem` [Internal] Redeems a partner-offer token for one of the viewer's existing workspaces, recording a pending redemption that is applied when the workspace subscribes. Requires an admin or owner role in the workspace.
+- `linear.mutation.passkeyLoginFinish` [INTERNAL] Finish passkey login process.
+- `linear.mutation.passkeyLoginStart` [INTERNAL] Starts passkey login process.
+- `linear.mutation.projectAddLabel` Adds a label to a project.
+- `linear.mutation.projectArchive` Archives a project.
+- `linear.mutation.projectCreate` Creates a new project.
+- `linear.mutation.projectCreateSlackChannel` [Internal] Creates a Slack channel for an existing project.
+- `linear.mutation.projectDelete` Deletes (trashes) a project. The project can be restored later with projectUnarchive.
+- `linear.mutation.projectDismissSlackChannelCreationFailure` [Internal] Dismisses the Slack channel creation failure notice for a project.
+- `linear.mutation.projectExternalSyncDisable` Disables external sync on a project.
+- `linear.mutation.projectLabelCreate` Creates a new project label.
+- `linear.mutation.projectLabelDelete` Deletes a project label.
+- `linear.mutation.projectLabelRestore` Restores a previously retired project label, making it available for use on new projects.
+- `linear.mutation.projectLabelRetire` Retires a project label. Retired labels remain on existing projects but cannot be applied to new ones.
+- `linear.mutation.projectLabelUpdate` Updates a project label.
+- `linear.mutation.projectMilestoneCreate` Creates a new project milestone.
+- `linear.mutation.projectMilestoneDelete` Deletes a project milestone.
+- `linear.mutation.projectMilestoneMove` [Internal] Moves a project milestone to another project, can be called to undo a prior move.
+- `linear.mutation.projectMilestoneUpdate` Updates a project milestone.
+- `linear.mutation.projectReassignStatus` [INTERNAL] Reassigns all projects from one project status to another. Used when archiving or deleting a project status.
+- `linear.mutation.projectRelationCreate` Creates a new project relation.
+- `linear.mutation.projectRelationDelete` Deletes a project relation.
+- `linear.mutation.projectRelationUpdate` Updates a project relation.
+- `linear.mutation.projectRemoveLabel` Removes a label from a project.
+- `linear.mutation.projectStatusArchive` Archives a project status. The status must not have any active projects assigned to it and must not be the last status of its type.
+- `linear.mutation.projectStatusCreate` Creates a new project status.
+- `linear.mutation.projectStatusUnarchive` Unarchives a project status.
+- `linear.mutation.projectStatusUpdate` Updates a project status.
+- `linear.mutation.projectUnarchive` Restores a previously trashed or archived project.
+- `linear.mutation.projectUpdate` Updates a project.
+- `linear.mutation.projectUpdateArchive` Archives a project update.
+- `linear.mutation.projectUpdateCreate` Creates a new project update.
+- `linear.mutation.projectUpdateDelete` Deletes a project update.
+- `linear.mutation.projectUpdateUnarchive` Unarchives a project update.
+- `linear.mutation.projectUpdateUpdate` Updates a project update.
+- `linear.mutation.pushSubscriptionCreate` Creates a push subscription for the authenticated user's current device or browser. If a subscription already exists for the same session, the old one is replaced.
+- `linear.mutation.pushSubscriptionDelete` Deletes a push subscription, unregistering the device from receiving push notifications.
+- `linear.mutation.reactionCreate` Creates a new reaction.
+- `linear.mutation.reactionDelete` Deletes a reaction.
+- `linear.mutation.refreshGoogleSheetsData` Manually update Google Sheets data.
+- `linear.mutation.releaseArchive` Archives a release.
+- `linear.mutation.releaseComplete` Marks a release as completed. If version is provided, completes that specific release; otherwise completes the most recent started release.
+- `linear.mutation.releaseCompleteByAccessKey` Marks a release as completed using an access key. If version is provided, completes that specific release; otherwise completes the most recent started release. The pipeline is inferred from the access key.
+- `linear.mutation.releaseCreate` Creates a new release in a pipeline. If no stage is specified, defaults to the first completed stage for continuous pipelines or the first started stage for scheduled pipelines.
+- `linear.mutation.releaseDelete` Moves a release to the trash bin. Trashed releases are archived and will be permanently deleted after a retention period. If the release is already archived, it is marked as trashed with a fresh archive timestamp.
+- `linear.mutation.releaseNoteCreate` Creates a release note.
+- `linear.mutation.releaseNoteDelete` Deletes a release note.
+- `linear.mutation.releaseNoteUpdate` Updates a release note.
+- `linear.mutation.releasePipelineArchive` Archives a release pipeline.
+- `linear.mutation.releasePipelineCreate` Creates a new release pipeline with default stages. Subject to plan entitlement and quota limits.
+- `linear.mutation.releasePipelineDelete` Moves a release pipeline to the trash bin. Trashed pipelines are archived and will be permanently deleted after a retention period, along with all their releases. If the pipeline is already archived, it is marked as trashed with a fresh archive timestamp.
+- `linear.mutation.releasePipelineUnarchive` Unarchives a release pipeline.
+- `linear.mutation.releasePipelineUpdate` Updates an existing release pipeline. Supports updating name, slug, type, production flag, path patterns, and team associations. Private teams that the current user cannot access are preserved in the team list.
+- `linear.mutation.releaseStageArchive` Archives a release stage. Only started-type stages can be archived, and only if they have no active releases and at least one other stage of the same type remains. Cannot archive the last non-frozen started stage.
+- `linear.mutation.releaseStageCreate` Creates a new release stage in a pipeline. Non-started stages must use default names and colors and are unique by type; creating a canonical duplicate returns the existing stage. Started stages can optionally be frozen, but at least one non-frozen started stage must remain.
+- `linear.mutation.releaseStageUnarchive` Unarchives a release stage.
+- `linear.mutation.releaseStageUpdate` Updates an existing release stage. Only started-type stages can be edited. Supports updating name, color, position, and frozen status.
+- `linear.mutation.releaseSync` Syncs release data by resolving issue and pull request references and associating them with a release. For continuous pipelines, creates a new completed release. For scheduled pipelines, finds or creates a started release and accumulates issues into it.
+- `linear.mutation.releaseSyncByAccessKey` Syncs release data using an access key for CI/CD integration. The pipeline is automatically inferred from the access key's configured resources, so no pipeline ID is needed in the input.
+- `linear.mutation.releaseUnarchive` Unarchives a release.
+- `linear.mutation.releaseUpdate` Updates an existing release by ID. Supports updating name, description, version, commit SHA, pipeline, stage, and dates.
+- `linear.mutation.releaseUpdateByPipeline` Updates a release by pipeline identifier. Finds the release by version, otherwise the latest started release or else the planned release with the earliest target date, and optionally transitions it to a new stage by name.
+- `linear.mutation.releaseUpdateByPipelineByAccessKey` Updates a release by pipeline using an access key.
+- `linear.mutation.resendOrganizationInvite` Re-sends a workspace invitation email for the specified invite ID.
+- `linear.mutation.resendOrganizationInviteByEmail` Re-sends a workspace invitation email to the specified email address, if an outstanding invite exists for that address.
+- `linear.mutation.roadmapArchive` Archives a roadmap.
+- `linear.mutation.roadmapCreate` Creates a new roadmap.
+- `linear.mutation.roadmapDelete` Deletes a roadmap.
+- `linear.mutation.roadmapToProjectCreate` [Deprecated] Creates a new roadmap-to-project association. Use InitiativeToProject instead.
+- `linear.mutation.roadmapToProjectDelete` [Deprecated] Deletes a roadmap-to-project association. Use InitiativeToProject instead.
+- `linear.mutation.roadmapToProjectUpdate` [Deprecated] Updates a roadmap-to-project association. Use InitiativeToProject instead.
+- `linear.mutation.roadmapUnarchive` Unarchives a roadmap.
+- `linear.mutation.roadmapUpdate` Updates a roadmap.
+- `linear.mutation.samlTokenUserAccountAuth` Authenticates a user account via email and authentication token for SAML.
+- `linear.mutation.teamCreate` Creates a new team. The user who creates the team will automatically be added as a member and owner of the newly created team. Default workflow states, labels, and other team resources are created alongside the team.
+- `linear.mutation.teamCyclesDelete` Deletes all cycle data for a team, disabling the cycles feature. This removes all cycles and their issue associations.
+- `linear.mutation.teamDelete` Archives a team and schedules its data for deletion. Requires team owner or workspace admin permissions.
+- `linear.mutation.teamKeyDelete` Deletes a previously used team key. The active team key (the team's current key) cannot be deleted.
+- `linear.mutation.teamMembershipCreate` Creates a new team membership, adding a user to a team. Validates that the user is not already a member, the team is not archived or retired, and the requesting user has permission to add members.
+- `linear.mutation.teamMembershipDelete` Deletes a team membership, removing the user from the team. Users can remove their own membership, or team owners and workspace admins can remove other members.
+- `linear.mutation.teamMembershipUpdate` Updates a team membership, such as changing ownership status or sort order.
+- `linear.mutation.teamUnarchive` Unarchives a team and cancels deletion.
+- `linear.mutation.teamUpdate` Updates a team's settings, properties, or configuration. Requires team owner or workspace admin permissions for most changes.
+- `linear.mutation.templateCreate` Creates a new template.
+- `linear.mutation.templateDelete` Deletes a template.
+- `linear.mutation.templateUpdate` Updates an existing template.
+- `linear.mutation.timeScheduleCreate` Creates a new time schedule.
+- `linear.mutation.timeScheduleDelete` Deletes a time schedule.
+- `linear.mutation.timeScheduleRefreshIntegrationSchedule` Refresh the integration schedule information.
+- `linear.mutation.timeScheduleUpdate` Updates a time schedule.
+- `linear.mutation.timeScheduleUpsertExternal` Upsert an external time schedule.
+- `linear.mutation.trackAnonymousEvent` Track an anonymous analytics event.
+- `linear.mutation.triageResponsibilityCreate` Creates a new triage responsibility.
+- `linear.mutation.triageResponsibilityDelete` Deletes a triage responsibility.
+- `linear.mutation.triageResponsibilityUpdate` Updates an existing triage responsibility.
+- `linear.mutation.updateIntegrationSlackScopes` [Internal] Updates existing Slack and Asks integration scopes.
+- `linear.mutation.userChangeRole` Changes the workspace role of a user. The requesting user must have a role equal to or higher than the target role. Requires workspace admin permissions.
+- `linear.mutation.userDiscordConnect` Connects the Discord user to this Linear account via OAuth2.
+- `linear.mutation.userExternalUserDisconnect` Disconnects the external user from this Linear account.
+- `linear.mutation.userFlagUpdate` Updates a specific user settings flag by performing an operation (e.g., increment or clear) on it.
+- `linear.mutation.userRevokeAllSessions` Revokes all active sessions for a user, forcing them to re-authenticate. Can only be called by a workspace admin or owner.
+- `linear.mutation.userRevokeSession` Revokes a specific authentication session for a user. The admin cannot revoke their own sessions with this mutation. Can only be called by a workspace admin or owner.
+- `linear.mutation.userSettingsFlagsReset` Resets one or more of the user's setting flags. If no specific flags are provided, all flags are reset.
+- `linear.mutation.userSettingsUpdate` Updates the authenticated user's settings, including notification preferences, email subscriptions, theme, and other UI preferences.
+- `linear.mutation.userSuspend` Suspends a user, deactivating their account and revoking access to the workspace. The suspended user's sessions are invalidated. Can only be called by a workspace admin or owner.
+- `linear.mutation.userUnlinkFromIdentityProvider` Unlinks a guest user from their identity provider. Can only be called by an admin when SCIM is enabled.
+- `linear.mutation.userUnsuspend` Re-activates a suspended user, restoring their access to the workspace. Can only be called by a workspace admin or owner.
+- `linear.mutation.userUpdate` Updates a user's profile information. Users can update their own profile; workspace admins can update any user's profile. SCIM-managed users may have restricted name changes.
+- `linear.mutation.viewPreferencesCreate` Creates a new view preferences object. If conflicting preferences already exist for the same view type and scope, the existing preferences are replaced.
+- `linear.mutation.viewPreferencesDelete` Deletes a view preferences object. If the preferences do not exist, the operation is treated as a successful idempotent deletion.
+- `linear.mutation.viewPreferencesUpdate` Updates an existing view preferences object. For user-type preferences, only the owning user can update them.
+- `linear.mutation.webhookCreate` Creates a new webhook subscription for the workspace. Requires specifying a URL, resource types to subscribe to, and either a specific team or all public teams.
+- `linear.mutation.webhookDelete` Deletes a Webhook.
+- `linear.mutation.webhookRotateSecret` Rotates the signing secret for a webhook, generating a new HMAC-SHA256 key and returning it. The old secret is immediately invalidated.
+- `linear.mutation.webhookUpdate` Updates an existing Webhook.
+- `linear.mutation.workflowStateArchive` Archives a state. Only states with issues that have all been archived can be archived.
+- `linear.mutation.workflowStateCreate` Creates a new state, adding it to the workflow of a team.
+- `linear.mutation.workflowStateUpdate` Updates a state.
+
+## Queries
+
+- `linear.query._dummy`
+- `linear.query.administrableTeams` All teams whose settings the user can administer. This includes teams the user can change settings for, but whose issues they may not have direct access to. This differs from the `teams` query which returns teams based on issue access.
+- `linear.query.agentActivities` All agent activities.
+- `linear.query.agentActivity` A specific agent activity.
+- `linear.query.agentSession` A specific agent session.
+- `linear.query.agentSessionSandbox` [Internal] Retrieves coding agent sandbox details for a given agent session ID.
+- `linear.query.agentSessionSshAddress` [Internal] SSH address of the current user's running coding sandbox for this agent session.
+- `linear.query.agentSessions` All agent sessions.
+- `linear.query.agentSkill` A specific agent skill.
+- `linear.query.agentSkills` All agent skills.
+- `linear.query.applicationInfo` Retrieves public information about an OAuth application by its client ID. Used during the authorization flow to display application details to the user.
+- `linear.query.archivedIntegrations` Recently archived GitHub integrations. Returns integrations archived within the last 30 days.
+- `linear.query.archivedTeams` [Internal] All archived teams of the workspace.
+- `linear.query.attachment` One specific issue attachment.
+- `linear.query.attachmentIssue` Query an issue by its associated attachment, and its id.
+- `linear.query.attachmentSources` [Internal] Get a list of all unique attachment sources in the workspace.
+- `linear.query.attachments` All issue attachments.
+- `linear.query.attachmentsForURL` Returns issue attachments for a given `url`.
+- `linear.query.auditEntries` All audit log entries.
+- `linear.query.auditEntryTypes` List of audit entry types.
+- `linear.query.auditLogWebhookFailureEvents` [INTERNAL] Failure events for an audit log webhook (last 50).
+- `linear.query.authenticationSessions` User's active sessions.
+- `linear.query.availableUsers` Fetch users belonging to this user account.
+- `linear.query.comment` A specific comment.
+- `linear.query.comments` All comments the user has access to in the workspace.
+- `linear.query.customView` One specific custom view, looked up by ID or slug.
+- `linear.query.customViewDetailsSuggestion` [INTERNAL] Suggests metadata (name, description, icon) for a view based on its filters using AI. Rate-limited to 30 requests per minute.
+- `linear.query.customViewHasSubscribers` Whether a custom view has active notification subscribers other than the current user. Useful for warning before deleting a shared view.
+- `linear.query.customViews` All custom views accessible to the user, including personal views and shared workspace views. Excludes views scoped to a specific project or initiative.
+- `linear.query.customer` Retrieves a single customer by ID or slug.
+- `linear.query.customerNeed` Retrieves a single customer need by ID or hash.
+- `linear.query.customerNeeds` All customer needs in the workspace, with optional filtering.
+- `linear.query.customerStatus` One specific customer status.
+- `linear.query.customerStatuses` All customer statuses defined in the workspace.
+- `linear.query.customerTier` One specific customer tier.
+- `linear.query.customerTiers` All customer tiers defined in the workspace.
+- `linear.query.customers` All customers in the workspace, with optional filtering and sorting.
+- `linear.query.cycle` One specific cycle, looked up by ID or slug.
+- `linear.query.cycles` All cycles accessible to the user.
+- `linear.query.dependencyPackageMetadata` Registry metadata (license, publish date, weekly download count) for a batch of dependency package versions, used by the dependency lock file diff preview. Cached across all workspaces since registry data isn't workspace-specific. A package the registry has no data for (or an unsupported ecosystem) is simply omitted from the result rather than erroring. At most 500 packages per request.
+- `linear.query.diff` [Internal] A specific diff.
+- `linear.query.document` A specific document by ID or slug.
+- `linear.query.documentContentHistory` A collection of document content history entries.
+- `linear.query.documentContentHistoryEntries` [Internal] Fetches document content history entries by their IDs, including content data.
+- `linear.query.documentContentHistoryTimeline` [Internal] Fetches the fresh document content history timeline for the client history dialog.
+- `linear.query.documents` All documents the user has access to in the workspace.
+- `linear.query.emailIntakeAddress` One specific email intake address.
+- `linear.query.emailIntakeAddresses` Email intake addresses accessible to the user in the workspace.
+- `linear.query.emoji` A specific custom emoji by ID or name.
+- `linear.query.emojis` All custom emojis in the workspace.
+- `linear.query.entityExternalLink` Retrieves a single entity external link by its identifier.
+- `linear.query.externalUser` Retrieves a single external user by their identifier.
+- `linear.query.externalUsers` All external users for the organization. External users are people who interact with Linear through integrated services (Slack, Jira, GitHub, etc.) without having a Linear account.
+- `linear.query.failuresForOauthWebhooks` [INTERNAL] Webhook failure events for webhooks that belong to an OAuth application. (last 50)
+- `linear.query.favorite` A specific favorite by ID.
+- `linear.query.favorites` The authenticated user's favorites. Returns all bookmarked items that appear in the user's sidebar.
+- `linear.query.inboxNotifications` The authenticated user's active inbox notifications, grouped according to inbox behavior.
+- `linear.query.initiative` Returns a single initiative by its identifier or URL slug.
+- `linear.query.initiativeFilterSuggestion` Suggests filters for an initiative view based on a text prompt.
+- `linear.query.initiativeLabel` Returns a single initiative label by its identifier.
+- `linear.query.initiativeLabels` Returns all initiative labels in the workspace, with optional filtering.
+- `linear.query.initiativeLeadTeamChangeImpact` [Internal] Returns the impact of changing an initiative's lead team before applying the update to matching sub-initiatives.
+- `linear.query.initiativeRelation` Returns a single initiative relation by its identifier.
+- `linear.query.initiativeRelations` Returns all initiative parent-child relations in the workspace.
+- `linear.query.initiativeToProject` Returns a single initiative-to-project association by its identifier.
+- `linear.query.initiativeToProjects` Returns all initiative-to-project associations in the workspace.
+- `linear.query.initiativeUpdate` Returns a single initiative update by its identifier.
+- `linear.query.initiativeUpdates` Returns all initiative status updates in the workspace, with optional filtering.
+- `linear.query.initiatives` Returns all initiatives in the workspace, with optional filtering and sorting.
+- `linear.query.integration` Retrieves a single integration by its identifier.
+- `linear.query.integrationHasScopes` Checks if the integration has all required scopes.
+- `linear.query.integrationJiraProjectStatuses` [INTERNAL] Fetches a Jira project's status names, split into issue (non-Epic) and project (Epic) statuses.
+- `linear.query.integrationJiraSyncHealthCheck` [INTERNAL] Checks a Jira project for settings that will make Jira reject the changes Linear sends during sync. Reads Jira on every call.
+- `linear.query.integrationSyncResourceIds` [INTERNAL] Jira project IDs available for issue sync.
+- `linear.query.integrationTemplate` Retrieves a single integration template connection by its identifier.
+- `linear.query.integrationTemplates` All integration template connections for the workspace, linking templates to integrations.
+- `linear.query.integrations` All integrations for the workspace.
+- `linear.query.integrationsSettings` Retrieves a specific integration settings configuration by its identifier.
+- `linear.query.issue` One specific issue, looked up by its unique identifier.
+- `linear.query.issueFigmaFileKeySearch` Find issues that are related to a given Figma file key.
+- `linear.query.issueFilterSuggestion` Suggests filters for an issue view based on a text prompt.
+- `linear.query.issueImportCheckCSV` Checks a CSV file validity against a specific import service.
+- `linear.query.issueImportCheckSync` Checks whether it will be possible to set up sync for this project or repository at the end of import.
+- `linear.query.issueImportJqlCheck` Checks whether a custom JQL query is valid and can be used to filter issues of a Jira import.
+- `linear.query.issueLabel` One specific label, looked up by its unique identifier.
+- `linear.query.issueLabels` All issue labels. Returns a paginated list of labels visible to the authenticated user, including both workspace-level and team-scoped labels.
+- `linear.query.issuePriorityValues` Issue priority values and corresponding labels.
+- `linear.query.issueRelation` One specific issue relation, looked up by its unique identifier.
+- `linear.query.issueRelations` All issue relations. Returns a paginated list of all issue relations (blocks, blocked by, relates to, duplicates) visible to the authenticated user.
+- `linear.query.issueRepositorySuggestions` Returns code repositories that are most likely to be relevant for implementing an issue.
+- `linear.query.issueSearch` [DEPRECATED] Search issues. This endpoint is deprecated and will be removed in the future – use `searchIssues` instead.
+- `linear.query.issueTitleSuggestionFromCustomerRequest` Suggests an issue title based on a customer request message using AI summarization.
+- `linear.query.issueToRelease` One specific issue-to-release association, looked up by its unique identifier.
+- `linear.query.issueToReleases` All issue-to-release associations. Returns a paginated list of all issue-to-release links visible to the authenticated user.
+- `linear.query.issueVcsBranchSearch` Find issue based on the VCS branch name.
+- `linear.query.issues` All issues. Returns a paginated list of issues visible to the authenticated user. Can be filtered by various criteria including team, assignee, state, labels, project, and cycle.
+- `linear.query.latestReleaseByAccessKey` Returns the most recently completed or updated release for the pipeline associated with the access key.
+- `linear.query.microsoftTeamsChannels` [Internal] Lists Microsoft Teams teams and channels accessible to the connecting user. Uses the user's microsoftPersonal integration for auth. Used by the project channel picker dialog to populate the team/channel dropdowns.
+- `linear.query.notification` A specific notification by ID.
+- `linear.query.notificationSubscription` A specific notification subscription by ID.
+- `linear.query.notificationSubscriptions` The authenticated user's notification subscriptions. These subscriptions control which notifications the user receives for specific entities such as teams, projects, cycles, labels, custom views, initiatives, customers, and users.
+- `linear.query.notifications` The authenticated user's notifications.
+- `linear.query.notificationsUnreadCount` [Internal] A number of unread notifications.
+- `linear.query.oauthApplication` [ALPHA] A specific OAuth application created by the calling OAuth application through the public API.
+- `linear.query.oauthApplicationCodingSessionTrustedSource` Returns the authenticated OAuth application's trusted-source status for Coding Sessions in the workspace. Requires an OAuth access token with the `read` scope.
+- `linear.query.oauthApplications` [ALPHA] OAuth applications created by the calling OAuth application through the public API.
+- `linear.query.organization` The authenticated user's workspace.
+- `linear.query.organizationCodingInferenceKeys` [Internal] Saved workspace inference credentials for Coding Sessions, without their keys.
+- `linear.query.organizationDomainClaimRequest` [INTERNAL] Checks whether the domain can be claimed.
+- `linear.query.organizationExists` Checks whether a workspace with the given URL key exists.
+- `linear.query.organizationInvite` Fetches a specific workspace invite by its ID.
+- `linear.query.organizationInviteDetails` Fetches public details of a specific workspace invite by its ID. This query does not require authentication and is used for invite acceptance flows.
+- `linear.query.organizationInvites` All pending and accepted invites for the workspace.
+- `linear.query.organizationMeta` [INTERNAL] Get workspace metadata by URL key or workspace ID.
+- `linear.query.originInstallUrl` [Internal] Builds the URL that starts installing Linear's Origin app into a codebase, or reinstalling it to grant new scopes.
+- `linear.query.originInstallation` [Internal] Describes an Origin installation that started on Origin, for its installer to confirm before connecting.
+- `linear.query.originPendingInstallations` [Internal] Lists the Origin installations the current user started on Origin that no workspace has connected yet, matched by the user's email.
+- `linear.query.partnerOfferDetails` [Internal] Fetches public details of an active partner-program offer by its partner slug. Returns null when no active offer matches the slug.
+- `linear.query.partnerOfferWorkspaces` [Internal] Fetches the viewer's workspaces hosted in the serving cell, with each workspace's eligibility to redeem the given partner-offer token. Returns null when the token is invalid or the offer is no longer available.
+- `linear.query.partnerProgramPartners` [Internal] Lists every partner with an active partner-program offer, ordered by display name. Backs the partner directory on the marketing website.
+- `linear.query.project` Returns a single project by its identifier or URL slug.
+- `linear.query.projectFilterSuggestion` Suggests filters for a project view based on a text prompt.
+- `linear.query.projectLabel` Returns a single project label by its identifier.
+- `linear.query.projectLabels` All project labels. Returns a paginated list of labels visible to the authenticated user, including both workspace-level and team-scoped labels, with optional filtering.
+- `linear.query.projectMilestone` Returns a single project milestone by its identifier.
+- `linear.query.projectMilestones` Returns all project milestones in the workspace, with optional filtering.
+- `linear.query.projectRelation` Returns a single project relation by its identifier.
+- `linear.query.projectRelations` Returns all project dependency relations in the workspace.
+- `linear.query.projectStatus` Returns a single project status by its identifier.
+- `linear.query.projectStatusProjectCount` [INTERNAL] Count of projects using this project status across the workspace.
+- `linear.query.projectStatuses` Returns all project statuses in the workspace.
+- `linear.query.projectUpdate` Returns a single project update by its identifier.
+- `linear.query.projectUpdates` Returns all project status updates in the workspace, with optional filtering.
+- `linear.query.projects` Returns all projects in the workspace, with optional filtering and sorting.
+- `linear.query.pushSubscriptionTest` Sends a test push notification to the authenticated user's registered devices. Useful for verifying that push notification delivery is working correctly.
+- `linear.query.quotas` Public resource quotas for the authenticated workspace. These are not subscription limits.
+- `linear.query.rateLimitStatus` The current rate limit status for the authenticated client, including remaining quota and reset timing for each limit type.
+- `linear.query.recentReleasesByAccessKey` Returns releases for the pipeline associated with the access key, ordered with the most recently completed or updated first.
+- `linear.query.release` Fetch a single release by its UUID or slug identifier.
+- `linear.query.releaseNote` Fetch a release note by its UUID or slug identifier.
+- `linear.query.releaseNotes` Release notes in the workspace.
+- `linear.query.releasePipeline` Fetch a single release pipeline by its UUID or slug identifier.
+- `linear.query.releasePipelineByAccessKey` Returns the release pipeline associated with the access key.
+- `linear.query.releasePipelines` All release pipelines in the workspace, with optional filtering and sorting.
+- `linear.query.releaseSearch` Search releases with optional text matching against name, version, and pipeline name. When no search term is provided, returns releases ordered by stage priority (started > planned > completed > canceled).
+- `linear.query.releaseStage` Fetch a single release stage by its UUID.
+- `linear.query.releaseStages` All release stages in the workspace, with optional filtering.
+- `linear.query.releases` All releases in the workspace, with optional filtering and sorting.
+- `linear.query.roadmap` [Deprecated] Returns a single roadmap by its identifier. Use initiatives instead.
+- `linear.query.roadmapToProject` [Deprecated] Returns a single roadmap-to-project association. Use InitiativeToProject instead.
+- `linear.query.roadmapToProjects` [Deprecated] Returns all roadmap-to-project associations. Use InitiativeToProject instead.
+- `linear.query.roadmaps` [Deprecated] Returns all roadmaps in the workspace. Use initiatives instead.
+- `linear.query.searchDocuments` Search documents by text query using full-text and vector search. Results are ranked by relevance unless an orderBy parameter is specified. Rate-limited to 30 requests per minute.
+- `linear.query.searchIssues` Search issues by text query using full-text and vector search. Results are ranked by relevance unless an orderBy parameter is specified. Supports optional issue filters and comment inclusion. Rate-limited to 30 requests per minute.
+- `linear.query.searchProjects` Search projects by text query using full-text and vector search. Results are ranked by relevance unless an orderBy parameter is specified. Rate-limited to 30 requests per minute.
+- `linear.query.semanticSearch` Search for issues, projects, initiatives, and documents using natural language. Uses vector-based semantic search with optional full-text search and reranking. Results can be filtered by type and by entity-specific filters. Rate-limited to 30 requests per minute.
+- `linear.query.slaConfigurations` Active SLA configurations that can apply to the requested team.
+- `linear.query.ssoUrlFromEmail` Fetch SSO login URL for the email provided.
+- `linear.query.team` Fetches a specific team by its ID.
+- `linear.query.teamMembership` Fetches a specific team membership by its ID.
+- `linear.query.teamMemberships` All team memberships in the workspace.
+- `linear.query.teams` All teams whose issues the user can access. This includes public teams and private teams the user is a member of. This may differ from `administrableTeams`, which returns teams whose settings the user can change but whose issues they don't necessarily have access to.
+- `linear.query.template` A specific template.
+- `linear.query.templateSearch` Templates matching a filter, in the order they appear in the app. Filter on a null team to return only workspace-level templates.
+- `linear.query.templates` All templates in the workspace, including both team-scoped and workspace-level templates.
+- `linear.query.templatesForIntegration` Returns all templates that are associated with the integration type.
+- `linear.query.timeSchedule` A specific time schedule.
+- `linear.query.timeSchedules` All time schedules.
+- `linear.query.triageResponsibilities` All triage responsibilities.
+- `linear.query.triageResponsibility` A specific triage responsibility.
+- `linear.query.usageAlert` One usage-based billing alert, by its identifier.
+- `linear.query.usageAlerts` The workspace's usage-based billing alerts, such as a low or exhausted usage credit balance. Alerts for expired promotional credits are archived and excluded unless archived resources are requested. Use resolvedAt to tell an open alert from one whose condition has since cleared.
+- `linear.query.user` Fetches a specific user by their ID.
+- `linear.query.userSessions` Lists all active authentication sessions for a user. Can only be called by a workspace admin or owner.
+- `linear.query.userSettings` The authenticated user's notification and UI settings.
+- `linear.query.userViewPreferences` The authenticated user's workspace-level view display preferences for a view type. Returns the user-type preferences that are not scoped to a team, project, or other entity. Null if the user has not customized the view.
+- `linear.query.users` All users in the workspace. Supports filtering, sorting, and pagination.
+- `linear.query.verifyGitHubEnterpriseServerInstallation` Verify that we received the correct response from the GitHub Enterprise Server.
+- `linear.query.viewer` The currently authenticated user making the API request.
+- `linear.query.webhook` Retrieves a single webhook by its identifier.
+- `linear.query.webhooks` All webhooks for the current workspace.
+- `linear.query.workflowState` One specific workflow state (issue status), looked up by its unique identifier.
+- `linear.query.workflowStates` All issue workflow states (issue statuses). Returns a paginated list of workflow states visible to the authenticated user, across all teams they have access to.

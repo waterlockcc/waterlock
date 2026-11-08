@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      graphql:
+        specifier: ^17.0.2
+        version: 17.0.2
       postal-mime:
         specifier: 4.2.0
         version: 4.2.0
@@ -21,6 +24,9 @@ importers:
       '@hono/node-server':
         specifier: ^2.1.6
         version: 2.1.6(hono@4.13.16)
+      '@linear/sdk':
+        specifier: 99.0.0
+        version: 99.0.0(graphql@17.0.2)
       '@types/node':
         specifier: ^26.6.6
         version: 26.6.6
@@ -288,6 +294,11 @@ packages:
     resolution: {integrity: sha512-/Yg6UwLZaI74jY4Q8RhAFlEw4q+71c47oKlqr3ArGTG4HERa0S5NgzmTjECcV720tATnz9bpIvAnJ91VVnNHVA==}
     engines: {node: '>=22.0.0'}
 
+  '@graphql-typed-document-node/core@3.2.0':
+    resolution: {integrity: sha512-mB9oAsNCm9aM3/SOv4YtBMqZbYj10R7dkq8byBqxGY/ncFwhf2oQzMV+LCRlWoDSEBJ3COiR1yeDvMtsoOsuFQ==}
+    peerDependencies:
+      graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
+
   '@hono/node-server@2.1.6':
     resolution: {integrity: sha512-p/KH9MnfNcsm3sR6x4lNgm5j+QN4Et8srKredl9DZfXiyZ1UQ3aQ2YVpFLbqktYN5JI+DB+VZFKM2PqE5hLKjQ==}
     engines: {node: '>=20'}
@@ -303,6 +314,10 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
+
+  '@linear/sdk@99.0.0':
+    resolution: {integrity: sha512-VPzig11GUM9Ttz+UlQToUsOFdLfMpaOVaL/KGSOIdi+o1/yno3VXQrShkHXBxXLQd6Cl/N/eSclD9sZSq19crg==}
+    engines: {node: ^20.19.0 || >=22.12.0}
 
   '@modelcontextprotocol/sdk@1.32.2':
     resolution: {integrity: sha512-SWsVtH/0vULSQStoZ6xxH2K09Li8fXYTMC64ZeogCdpZ3XSi1eCPOByV1OpuJxuI3OcmHhosDWYyii07tpPsLw==}
@@ -832,6 +847,10 @@ packages:
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
     engines: {node: '>= 0.4'}
+
+  graphql@17.0.2:
+    resolution: {integrity: sha512-FRWbddMxfkjiB7z+aQDWIR+E34xo9I8c9mtK2RPv8PmMzKRvrdsreHL/Ui/TmwHJfhHChEtsFPyMHKI+xuarQQ==}
+    engines: {node: ^22.0.0 || ^24.0.0 || ^25.0.0 || >=26.0.0}
 
   has-symbols@1.1.0:
     resolution: {integrity: sha512-1cDNdwJ2Jaohmb3sg4OmKaMBwuC48sYni5HUw2DvsC8LjGTLK9h+eb1X6RyuOHe4hT0ULCW68iomhjUoKUqlPQ==}
@@ -1467,6 +1486,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@graphql-typed-document-node/core@3.2.0(graphql@17.0.2)':
+    dependencies:
+      graphql: 17.0.2
+
   '@hono/node-server@2.1.6(hono@4.13.16)':
     dependencies:
       hono: 4.13.16
@@ -1479,6 +1502,12 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
+
+  '@linear/sdk@99.0.0(graphql@17.0.2)':
+    dependencies:
+      '@graphql-typed-document-node/core': 3.2.0(graphql@17.0.2)
+    transitivePeerDependencies:
+      - graphql
 
   '@modelcontextprotocol/sdk@1.32.2(zod@4.6.7)':
     dependencies:
@@ -1957,6 +1986,8 @@ snapshots:
       - supports-color
 
   gopd@1.2.0: {}
+
+  graphql@17.0.2: {}
 
   has-symbols@1.1.0: {}
 

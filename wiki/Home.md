@@ -1,98 +1,30 @@
-## Install
+# waterlock
 
-```sh
-pnpm add @waterlock/gateway
-pnpm add zod   # only if you use @waterlock/gateway/checks
-```
+Open source solution to [workos airlock](https://workos.com/blog/workos-airlock).
 
-Node 24+.
+** This repo is a work in progress. Not ready for production usage. If you would like to contribute, 
+please raise an issue and we can chat **
 
-## Use
+## Why use this?
 
-**1. Gateway** (trusted side, holds the Gmail credential):
+You don't want to inject real creds into your agents since most of the applications have
+really broad permissions. What waterlock gives you
+- A common language to work with permissions regardless of the application you choose
+- Full visibility into what the accesses were like / audit logs (upcoming)
+- A gateway to proxy forward your external resource calls, preventing rogue agents from
+  leaking your sensitive keys.
+- Static typescript functions that can work for validation.
+- Natural language for limiting what your agents can do for a more restrictive agents. For example,
+  if you are using gmail, you can simply say 'No billing info allowed in emails' and waterlock takes
+  care of working with you.
+- You own the integration logic. With workos, you are really coupled to their infra. This provides a
+  more variable approach to integration.
+- You own the ai layer, use ai-sdk, direct Anthropic's ai is fine as well. Waterlock just works.
 
-```ts
-import { serve } from "@hono/node-server";
-import { createGateway, createSessions, staticToken } from "@waterlock/gateway";
-import { gmail } from "@waterlock/gateway/providers/gmail";
+## Navigate
 
-const sessions = createSessions({ signingKey: process.env.WATERLOCK_SIGNING_KEY! }); // >= 32 bytes
-
-const gateway = createGateway({
-  providers: [gmail({ credentials: staticToken({ token: process.env.GMAIL_ACCESS_TOKEN! }) })],
-  // Default deny: a call goes through only if an allow row matches and no deny row does.
-  policy: [
-    {
-      when: (r) =>
-        r.action === "gmail.users.messages.send" &&
-        r.context.recipients.length > 0 &&
-        r.context.recipients.every((addr) => addr === r.session.onBehalfOf),
-      reason: "You can only send email to yourself.",
-    },
-  ],
-  sessions,
-});
-
-serve({ fetch: gateway.fetch, port: 8787 }); // gateway.fetch is (Request) => Response
-```
-
-**2. Session token** for the agent, minted on the trusted side:
-
-```ts
-const { token } = await sessions.mint({ provider: "gmail", agent: "assistant", onBehalfOf: "alice@acme.com", ttlSeconds: 3600 });
-```
-
-**3. Harness** uses a stock client: gateway as base URL, session token as bearer.
-
-```ts
-import { auth, gmail } from "@googleapis/gmail";
-
-const oauth = new auth.OAuth2();
-oauth.setCredentials({ access_token: token });
-const api = gmail({ version: "v1", auth: oauth, rootUrl: "http://127.0.0.1:8787/" });
-
-await api.users.messages.send({ userId: "me", requestBody: { raw } });
-// denied -> 403 { error: { code: "policy_denied", message: "You can only send email to yourself." } }
-```
-
-**Plain-language rules** (deny only) are answered by your own model via `check`:
-
-```ts
-import { generateText, Output } from "ai";
-import { checkPrompt, checkSystemPrompt, verdictSchema } from "@waterlock/gateway/checks";
-
-createGateway({
-  // ...
-  policy: [
-    // ...allow rows
-    { when: "The email contains billing information", action: "deny" },
-  ],
-  check: async ({ condition, request, store, signal }) => {
-    const { output } = await generateText({
-      model,
-      system: checkSystemPrompt,
-      abortSignal: signal,
-      output: Output.object({ schema: verdictSchema }),
-      prompt: await checkPrompt({ condition, request, store }),
-    });
-    return output;
-  },
-});
-```
-
-**Refreshing credentials** instead of a static token:
-
-```ts
-import { oauth2Refresh } from "@waterlock/gateway";
-
-gmail({
-  credentials: oauth2Refresh({
-    tokenUrl: "https://oauth2.googleapis.com/token",
-    clientId,
-    clientSecret,
-    refreshToken: (session) => lookupRefreshToken(session.onBehalfOf),
-  }),
-});
-```
-
-Full runnable example: [examples/ai-sdk-send-email](https://github.com/waterlockcc/waterlock/tree/main/examples/ai-sdk-send-email).
+- [Install](Install)
+- [Quickstart](Quickstart)
+- [Actions](Actions): how calls map to rules (Discovery, OpenAPI, GraphQL)
+- [Policies](Policies) · [Credentials](Credentials)
+- Providers: [Gmail](Gmail) · [Linear](Linear)
