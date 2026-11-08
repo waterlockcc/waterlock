@@ -1,4 +1,9 @@
-import { HTTP_METHODS, type HttpMethod, type ParamSpec, type ParamType } from "../core/types.js";
+import {
+  HTTP_METHODS,
+  type HttpMethod,
+  type ParamSpec,
+  type ParamType,
+} from "../core/types.js";
 import type { NormalizedSpec, SpecOperation } from "./model.js";
 
 /** Google API Discovery document (subset we use). */
@@ -50,7 +55,9 @@ export function fromDiscovery(doc: DiscoveryDoc): NormalizedSpec {
     title: doc.title ?? doc.name,
     version: doc.version,
     revision: doc.revision,
-    globalQueryParams: Object.entries(doc.parameters ?? {}).map(([name, p]) => toParam(name, p, false)),
+    globalQueryParams: Object.entries(doc.parameters ?? {}).map(([name, p]) =>
+      toParam(name, p, false),
+    ),
     operations,
   };
 }
@@ -62,10 +69,13 @@ function walk(r: DiscoveryResource, visit: (m: DiscoveryMethod) => void): void {
 
 function toOperation(doc: DiscoveryDoc, m: DiscoveryMethod): SpecOperation {
   const method = m.httpMethod.toUpperCase() as HttpMethod;
-  if (!HTTP_METHODS.includes(method)) throw new Error(`${m.id}: unsupported HTTP method ${m.httpMethod}`);
+  if (!HTTP_METHODS.includes(method))
+    throw new Error(`${m.id}: unsupported HTTP method ${m.httpMethod}`);
 
   const path = joinPath(doc.servicePath, m.path);
-  const multiSegment = new Set([...path.matchAll(/\{\+([^}]+)\}/g)].map((x) => x[1]!));
+  const multiSegment = new Set(
+    [...path.matchAll(/\{\+([^}]+)\}/g)].map((x) => x[1]!),
+  );
   const params = Object.entries(m.parameters ?? {})
     .filter(([, p]) => p.location === "path" || p.location === "query")
     .map(([name, p]) => toParam(name, p, multiSegment.has(name)))
@@ -74,14 +84,18 @@ function toOperation(doc: DiscoveryDoc, m: DiscoveryMethod): SpecOperation {
   // Every template variable must be a declared path param, or the matcher can't type it.
   for (const [, name] of path.matchAll(/\{\+?([^}]+)\}/g)) {
     if (!params.some((p) => p.in === "path" && p.name === name)) {
-      throw new Error(`${m.id}: path variable {${name}} has no matching path parameter`);
+      throw new Error(
+        `${m.id}: path variable {${name}} has no matching path parameter`,
+      );
     }
   }
 
   const routes: SpecOperation["routes"] = [{ variant: "standard", path }];
   const media = m.mediaUpload?.protocols;
-  if (media?.simple) routes.push({ variant: "upload", path: media.simple.path });
-  if (media?.resumable) routes.push({ variant: "resumable", path: media.resumable.path });
+  if (media?.simple)
+    routes.push({ variant: "upload", path: media.simple.path });
+  if (media?.resumable)
+    routes.push({ variant: "resumable", path: media.resumable.path });
 
   return {
     action: m.id,
@@ -93,7 +107,11 @@ function toOperation(doc: DiscoveryDoc, m: DiscoveryMethod): SpecOperation {
   };
 }
 
-function toParam(name: string, p: DiscoveryParam, multiSegment: boolean): ParamSpec {
+function toParam(
+  name: string,
+  p: DiscoveryParam,
+  multiSegment: boolean,
+): ParamSpec {
   const spec: ParamSpec = {
     name,
     in: p.location === "path" ? "path" : "query",

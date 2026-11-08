@@ -6,7 +6,10 @@ import type { GraphqlMatcher, OperationTable } from "./types.js";
  * Extracts policy-relevant fields from a request body. Throwing denies the
  * request: if the gateway can't read what a call does, it doesn't forward it.
  */
-export type Decoder = (input: { body: Uint8Array; contentType: string | null }) => object | Promise<object>;
+export type Decoder = (input: {
+  body: Uint8Array;
+  contentType: string | null;
+}) => object | Promise<object>;
 
 /** `R` is the request type rules see for this provider. Type-only: drives policy autocomplete and checks. */
 export interface ProviderDefinition<R extends AnyRequest = AnyRequest> {
@@ -49,13 +52,16 @@ export interface ProviderDefinition<R extends AnyRequest = AnyRequest> {
  *   - rules: `in(group)` on the rule input, typed from `groups` so typos fail typecheck
  *   - built-in providers ship curated defaults (gmail: read, compose, send, delete, forwarding...)
  */
-export function createProvider<R extends AnyRequest>(def: ProviderDefinition<R>): ProviderDefinition<R> {
+export function createProvider<R extends AnyRequest>(
+  def: ProviderDefinition<R>,
+): ProviderDefinition<R> {
   return def;
 }
 
 /** Union of the request types of a list of providers. */
-export type RequestOf<P extends readonly ProviderDefinition[]> = P[number] extends infer D
-  ? D extends ProviderDefinition<infer R>
-    ? R
-    : never
-  : never;
+export type RequestOf<P extends readonly ProviderDefinition[]> =
+  P[number] extends infer D
+    ? D extends ProviderDefinition<infer R>
+      ? R
+      : never
+    : never;

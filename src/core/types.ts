@@ -1,6 +1,12 @@
 /** May gain members later (e.g. "HEAD"). */
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-export const HTTP_METHODS: readonly HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE"];
+export const HTTP_METHODS: readonly HttpMethod[] = [
+  "GET",
+  "POST",
+  "PUT",
+  "PATCH",
+  "DELETE",
+];
 
 export type ParamType = "string" | "integer" | "number" | "boolean";
 

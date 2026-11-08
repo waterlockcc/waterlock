@@ -51,6 +51,8 @@ export interface Policy<R extends AnyRequest = AnyRequest> {
  *   - otherwise                        -> allow
  * Plain-language rows only run once the function rows would allow.
  */
-export function definePolicy<R extends AnyRequest = AnyRequest>(rules: PolicyRule<R>[]): Policy<R> {
+export function definePolicy<R extends AnyRequest = AnyRequest>(
+  rules: PolicyRule<R>[],
+): Policy<R> {
   return { rules: Object.freeze([...rules]) };
 }

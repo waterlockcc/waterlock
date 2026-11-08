@@ -3,7 +3,11 @@ import type { ProviderRequest } from "../../core/policy.js";
 import { createProvider } from "../../core/provider.js";
 import { buildSchema, type GraphQLSchema } from "graphql";
 import { createGraphqlMatcher } from "../../graphql/index.js";
-import { linearSdl, type LinearAction, type LinearParams } from "./generated.js";
+import {
+  linearSdl,
+  type LinearAction,
+  type LinearParams,
+} from "./generated.js";
 
 export type * from "./generated.js";
 export { linearSdl } from "./generated.js";
@@ -15,7 +19,12 @@ let schema: GraphQLSchema | undefined; // built once (~100ms), on first linear()
  * `r.action === "linear.mutation.issueCreate" && r.params.input.teamId === TEAM`.
  */
 export type LinearRequest = {
-  [A in LinearAction]: ProviderRequest<"linear", A, LinearParams[A], Record<string, never>>;
+  [A in LinearAction]: ProviderRequest<
+    "linear",
+    A,
+    LinearParams[A],
+    Record<string, never>
+  >;
 }[LinearAction];
 
 export function linear(opts: {
@@ -27,8 +36,19 @@ export function linear(opts: {
   return createProvider<LinearRequest>({
     id: "linear",
     upstream: opts.upstream ?? "https://api.linear.app",
-    graphql: { endpoint: "/graphql", matcher: createGraphqlMatcher({ provider: "linear", schema: (schema ??= buildSchema(linearSdl)) }) },
+    graphql: {
+      endpoint: "/graphql",
+      matcher: createGraphqlMatcher({
+        provider: "linear",
+        schema: (schema ??= buildSchema(linearSdl)),
+      }),
+    },
     credentials: opts.credentials,
-    ...(opts.auth === "apiKey" ? { inject: ({ headers, credential }) => headers.set("authorization", credential.token) } : {}),
+    ...(opts.auth === "apiKey"
+      ? {
+          inject: ({ headers, credential }) =>
+            headers.set("authorization", credential.token),
+        }
+      : {}),
   });
 }

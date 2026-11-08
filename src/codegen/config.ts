@@ -7,7 +7,12 @@ export interface CodegenConfig {
    * Paths are relative to the config file. `file` is the pinned spec (JSON, or SDL text for
    * `graphql`); `url` is used by `--fetch`. `title` names a GraphQL schema in generated comments.
    */
-  source: { kind: "discovery" | "openapi" | "graphql"; file: string; url?: string; title?: string };
+  source: {
+    kind: "discovery" | "openapi" | "graphql";
+    file: string;
+    url?: string;
+    title?: string;
+  };
   /** Output file for generated TS, relative to the config file. */
   out: string;
   /** Markdown report for reviewers, relative to the config file. */

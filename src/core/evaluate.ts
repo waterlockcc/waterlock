@@ -46,8 +46,16 @@ export async function evaluatePolicy<R extends AnyRequest>(
   req: R,
   opts: CheckOptions<R> = {},
 ): Promise<Decision> {
-  const rules = policy.rules.map((rule, i) => ({ id: `#${i}`, rule, action: rule.action ?? "allow" }));
-  const deny = (ids: string[], reason: string): Decision => ({ effect: "deny", rules: ids, reason });
+  const rules = policy.rules.map((rule, i) => ({
+    id: `#${i}`,
+    rule,
+    action: rule.action ?? "allow",
+  }));
+  const deny = (ids: string[], reason: string): Decision => ({
+    effect: "deny",
+    rules: ids,
+    reason,
+  });
 
   const input = Object.freeze({ ...req }); // rules can't mutate what later rules see
   const matched: typeof rules = [];
@@ -57,18 +65,31 @@ export async function evaluatePolicy<R extends AnyRequest>(
     try {
       value = r.rule.when(input);
     } catch (err) {
-      return deny([r.id], `rule ${r.id} threw: ${err instanceof Error ? err.message : String(err)}`);
+      return deny(
+        [r.id],
+        `rule ${r.id} threw: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
-    if (typeof value !== "boolean") return deny([r.id], `rule ${r.id} returned ${describe(value)}, expected boolean`);
+    if (typeof value !== "boolean")
+      return deny(
+        [r.id],
+        `rule ${r.id} returned ${describe(value)}, expected boolean`,
+      );
     if (value) matched.push(r);
   }
 
   const staticDeny = matched.find((r) => r.action === "deny");
-  if (staticDeny) return deny([staticDeny.id], staticDeny.rule.reason ?? `denied by ${staticDeny.id}`);
+  if (staticDeny)
+    return deny(
+      [staticDeny.id],
+      staticDeny.rule.reason ?? `denied by ${staticDeny.id}`,
+    );
 
   const allowed = matched.filter((r) => r.action === "allow");
   if (!allowed.length) {
-    const hints = rules.filter((r) => r.action === "allow" && r.rule.reason).map((r) => r.rule.reason!);
+    const hints = rules
+      .filter((r) => r.action === "allow" && r.rule.reason)
+      .map((r) => r.rule.reason!);
     return deny([], hints.length ? hints.join(" ") : "no allow rule matched");
   }
 
@@ -90,7 +111,13 @@ async function runChecks<R extends AnyRequest>(
   allow: Decision,
 ): Promise<Decision> {
   const check = opts.check;
-  if (!check) return { effect: "deny", rules: [], reason: "policy has natural-language rules but the gateway has no check function" };
+  if (!check)
+    return {
+      effect: "deny",
+      rules: [],
+      reason:
+        "policy has natural-language rules but the gateway has no check function",
+    };
 
   const timeoutMs = opts.checkTimeoutMs ?? 60_000;
   const controller = new AbortController();
@@ -99,10 +126,19 @@ async function runChecks<R extends AnyRequest>(
   const ask = (condition: string) => {
     let p = asked.get(condition);
     if (!p) {
-      p = withTimeout(check({ condition, request, signal: controller.signal }), timeoutMs).then((out) => {
+      p = withTimeout(
+        check({ condition, request, signal: controller.signal }),
+        timeoutMs,
+      ).then((out) => {
         const o = out as { result?: unknown; explanation?: unknown } | null;
-        if (typeof o?.result !== "boolean") throw new Error("returned a malformed result");
-        return { result: o.result, ...(typeof o.explanation === "string" ? { explanation: o.explanation } : {}) } as Verdict;
+        if (typeof o?.result !== "boolean")
+          throw new Error("returned a malformed result");
+        return {
+          result: o.result,
+          ...(typeof o.explanation === "string"
+            ? { explanation: o.explanation }
+            : {}),
+        } as Verdict;
       });
       asked.set(condition, p);
     }
@@ -123,11 +159,22 @@ async function runChecks<R extends AnyRequest>(
       const condition = rule.when as string;
       ask(condition).then(
         (record) => {
-          if (record.result) settle({ ...allow, effect: "deny", rules: [id], reason: rule.reason ?? record.explanation ?? `denied by ${id}` });
+          if (record.result)
+            settle({
+              ...allow,
+              effect: "deny",
+              rules: [id],
+              reason: rule.reason ?? record.explanation ?? `denied by ${id}`,
+            });
           else if (--remaining === 0) settle(allow);
         },
         (err: unknown) =>
-          settle({ ...allow, effect: "deny", rules: [id], reason: `check "${condition}" failed: ${err instanceof Error ? err.message : String(err)}` }),
+          settle({
+            ...allow,
+            effect: "deny",
+            rules: [id],
+            reason: `check "${condition}" failed: ${err instanceof Error ? err.message : String(err)}`,
+          }),
       );
     }
   });
@@ -142,6 +189,10 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 }
 
 function describe(v: unknown): string {
-  if (v instanceof Promise || (typeof v === "object" && v !== null && "then" in v)) return "a Promise (rules must be sync)";
+  if (
+    v instanceof Promise ||
+    (typeof v === "object" && v !== null && "then" in v)
+  )
+    return "a Promise (rules must be sync)";
   return v === null ? "null" : typeof v;
 }

@@ -27,18 +27,26 @@ export interface SessionRef {
  */
 export interface SessionStore {
   /** Record what the human said. Called by your trusted front door via `sessions.addUserMessage`. */
-  addUserMessage?(input: { session: SessionRef; message: UserMessage }): Promise<void>;
+  addUserMessage?(input: {
+    session: SessionRef;
+    message: UserMessage;
+  }): Promise<void>;
   /**
    * Messages the human typed in this session, oldest first. When implemented, `checkPrompt`
    * reads them (via the `store` handed to `check`) and adds them as intent context.
    * Must return only messages written by trusted code (filter out assistant/tool/agent rows).
    * `limit`: return at most the last N.
    */
-  getUserMessages?(input: { session: SessionClaims; limit?: number }): Promise<UserMessages>;
+  getUserMessages?(input: {
+    session: SessionClaims;
+    limit?: number;
+  }): Promise<UserMessages>;
 }
 
 /** In-process store. One gateway process only; data is lost on restart. */
-export function memoryStore(opts: { maxMessagesPerSession?: number } = {}): Required<SessionStore> {
+export function memoryStore(
+  opts: { maxMessagesPerSession?: number } = {},
+): Required<SessionStore> {
   const max = opts.maxMessagesPerSession ?? 50;
   const messages = new Map<string, UserMessage[]>();
   return {
@@ -50,7 +58,11 @@ export function memoryStore(opts: { maxMessagesPerSession?: number } = {}): Requ
     },
     async getUserMessages({ session, limit }) {
       const list = messages.get(session.sid) ?? [];
-      return { items: (limit === undefined ? list : list.slice(-limit)).map((m) => ({ ...m })) };
+      return {
+        items: (limit === undefined ? list : list.slice(-limit)).map((m) => ({
+          ...m,
+        })),
+      };
     },
   };
 }
