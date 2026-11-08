@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import { generateGraphql } from "../src/codegen/index.js";
 import { createGraphqlMatcher } from "../src/graphql/index.js";
 import config from "../src/providers/linear/linear.config.js";
-import { linearGraphqlTable } from "../src/providers/linear/generated.js";
+import { linearSdl } from "../src/providers/linear/generated.js";
 
-const m = createGraphqlMatcher(linearGraphqlTable);
+const m = createGraphqlMatcher({ provider: "linear", schema: linearSdl });
 const enc = (body: unknown) => new TextEncoder().encode(typeof body === "string" ? body : JSON.stringify(body));
 const match = (query: string, variables?: unknown, extra: object = {}) => m.match(enc({ query, variables, ...extra }));
 const reason = (r: ReturnType<typeof match>) => (r.ok ? "ok" : `${r.status} ${r.reason}`);
@@ -28,7 +28,7 @@ describe("graphql matcher: top-level field is the action", () => {
   });
 
   it("schema defaults are filled in for args and nested input fields", () => {
-    expect(match(`{ releaseSearch(term: "x") { nodes { id } } }`)).toMatchObject({ ok: true, params: { term: "x", first: 20 } });
+    expect(match(`{ releaseSearch(term: "x") { id } }`)).toMatchObject({ ok: true, params: { term: "x", first: 20 } });
     const r = match(`{ issues(sort: [{ assignee: { order: Ascending } }]) { nodes { id } } }`);
     expect(r.ok && r.params).toEqual({ sort: [{ assignee: { order: "Ascending", nulls: "last" } }] });
   });
@@ -60,21 +60,32 @@ describe("graphql matcher: top-level field is the action", () => {
     ["no field", `{ __typename }`, "400 send one top-level field per request (got 0)"],
     ["two operations", `query A { issue(id: "1") { id } } query B { issue(id: "2") { id } }`, "400 send exactly one operation per request (got 2)"],
     ["subscription", `subscription { issueCreated { id } }`, "400 subscriptions not supported"],
-    ["unknown field", `mutation { nope(id: "1") { id } }`, `404 no linear mutation field "nope"`],
+    ["unknown field", `mutation { nope(id: "1") { id } }`, `400 invalid GraphQL: Cannot query field "nope" on type "Mutation".`],
     ["introspection", `{ __schema { types { name } } }`, `404 no linear query field "__schema"`],
-    ["unknown argument", `{ issue(id: "1", extra: 1) { id } }`, `400 argument "extra" not allowed for linear.query.issue`],
-    ["prototype-named argument", `{ issue(id: "1", constructor: 1) { id } }`, `400 argument "constructor" not allowed for linear.query.issue`],
-    ["duplicate argument", `{ issue(id: "1", id: "2") { id } }`, `400 argument "id" given twice`],
-    ["missing required argument", `{ issue { id } }`, `400 "id" is required`],
-    ["unknown input field", `mutation { issueCreate(input: { teamId: "T", sneaky: 1 }) { success } }`, `400 "input" has unknown field "sneaky"`],
-    ["wrong scalar type", `mutation { issueCreate(input: { teamId: 5 }) { success } }`, `400 "input.teamId" must be a string`],
-    ["bad enum", `{ issues(sort: [{ assignee: { order: Sideways } }]) { nodes { id } } }`, `400 "sort[0].assignee.order" must be one of Ascending, Descending`],
-    ["fragment on another type", `mutation { ...F } fragment F on Issue { id }`, "400 top-level fragment on Issue, expected Mutation"],
-    ["self-spreading fragment", `mutation { ...F } fragment F on Mutation { ...F }`, "400 fragment F spreads itself"],
-    ["unknown fragment", `mutation { ...F }`, "400 unknown fragment F"],
+    ["unknown argument", `{ issue(id: "1", extra: 1) { id } }`, `400 invalid GraphQL: Unknown argument "extra" on field "Query.issue".`],
+    ["prototype-named argument", `{ issue(id: "1", constructor: 1) { id } }`, `400 invalid GraphQL: Unknown argument "constructor" on field "Query.issue".`],
+    ["duplicate argument", `{ issue(id: "1", id: "2") { id } }`, `400 invalid GraphQL: There can be only one argument named "id".`],
+    ["missing required argument", `{ issue { id } }`, `400 invalid GraphQL: Argument "Query.issue(id:)" of type "String!" is required, but it was not provided.`],
+    ["unknown input field", `mutation { issueCreate(input: { teamId: "T", sneaky: 1 }) { success } }`, `400 invalid GraphQL: Expected value of type "IssueCreateInput" not to include unknown field "sneaky", found: { teamId: "T", sneaky: 1 }.`],
+    ["wrong scalar type", `mutation { issueCreate(input: { teamId: 5 }) { success } }`, `400 invalid GraphQL: String cannot represent a non string value: 5`],
+    ["bad enum", `{ issues(sort: [{ assignee: { order: Sideways } }]) { nodes { id } } }`, `400 invalid GraphQL: Value "Sideways" does not exist in "PaginationSortOrder" enum.`],
+    ["fragment on another type", `mutation { ...F } fragment F on Issue { id }`, `400 invalid GraphQL: Fragment "F" cannot be spread here as objects of type "Mutation" can never be of type "Issue".`],
+    ["self-spreading fragment", `mutation { ...F } fragment F on Mutation { ...F }`, "400 invalid GraphQL: document too deeply nested or cyclic"],
+    ["unknown fragment", `mutation { ...F }`, `400 invalid GraphQL: Unknown fragment "F".`],
     ["syntax error", `mutation {`, "400 invalid GraphQL: Syntax Error: Expected Name, found <EOF>."],
   ])("rejects %s", (_, query, expected) => {
     expect(reason(match(query))).toBe(expected);
+  });
+
+  it("variables are coerced by the schema too", () => {
+    const r = match(`mutation($i: IssueCreateInput!) { issueCreate(input: $i) { success } }`, { i: { teamId: "T", sneaky: 1 } });
+    expect(reason(r)).toMatch(/^400 Variable "\$i" has invalid value: Expected value of type "IssueCreateInput" not to include unknown field "sneaky"/);
+  });
+
+  it("deep nesting is a 400, not a crash", () => {
+    const depth = 5_000;
+    const r = m.match(enc({ query: `{ issue(id: "1") ${"{ team ".repeat(depth)}{ id }${" }".repeat(depth)} }` }));
+    expect(r.ok).toBe(false);
   });
 
   it("rejects batches, persisted queries, bad bodies, operationName mismatches", () => {
@@ -91,7 +102,7 @@ describe("graphql matcher: top-level field is the action", () => {
   });
 
   it("caps document size by token count", () => {
-    const small = createGraphqlMatcher(linearGraphqlTable, { maxTokens: 10 });
+    const small = createGraphqlMatcher({ provider: "linear", schema: linearSdl, maxTokens: 10 });
     expect(reason(small.match(enc({ query: `{ issue(id: "1") { id title description team { id } } }` })))).toBe("400 invalid GraphQL: Syntax Error: Document contains more than 10 tokens. Parsing aborted.");
   });
 });
@@ -114,20 +125,22 @@ describe("graphql codegen", () => {
     type Subscription { thingChanged: Thing }
   `;
 
-  it("one action per top-level query/mutation field, subscriptions skipped", async () => {
-    const { table, code } = await generateGraphql(tiny, { ...config, provider: "tiny", typePrefix: "Tiny", scalars: {} });
-    expect(table.fields.map((f) => f.action)).toEqual(["tiny.mutation.thingDelete", "tiny.query.thing", "tiny.query.things"]);
-    expect(table.inputs.Pick).toEqual({ fields: { id: { type: "ID" }, name: { type: "String" } }, oneOf: true });
+  const tinyConfig = { ...config, provider: "tiny", typePrefix: "Tiny", scalars: {} };
+
+  it("one action per top-level query/mutation field, subscriptions skipped, descriptions stripped", async () => {
+    const { actions, code } = await generateGraphql(`"Docs." ${tiny}`, tinyConfig);
+    expect(actions).toEqual(["tiny.mutation.thingDelete", "tiny.query.thing", "tiny.query.things"]);
     expect(code).toContain(`"tiny.query.things": { opts?: TinyOpts | null; first: number | null; };`);
     expect(code).toContain(`export interface TinyOpts { color: TinyColor | null; tags?: string[] | null; at?: unknown; }`);
+    expect(code).toContain(`export interface TinyPick { id?: string | null; name?: string | null; }`);
+    expect(code).not.toContain("Docs.");
   });
 
   it("oneOf inputs need exactly one field; ID accepts integers", async () => {
-    const { table } = await generateGraphql(tiny, { ...config, provider: "tiny", typePrefix: "Tiny", scalars: {} });
-    const tm = createGraphqlMatcher(table);
+    const tm = createGraphqlMatcher({ provider: "tiny", schema: tiny });
     const q = (pick: string) => tm.match(enc({ query: `{ thing(pick: ${pick}) { id } }` }));
     expect(q(`{ id: 7 }`)).toMatchObject({ ok: true, params: { pick: { id: "7" } } });
-    expect(reason(q(`{ id: 7, name: "x" }`))).toBe(`400 "pick" must set exactly one field`);
-    expect(reason(q(`{}`))).toBe(`400 "pick" must set exactly one field`);
+    expect(reason(q(`{ id: 7, name: "x" }`))).toMatch(/^400 invalid GraphQL: .*exactly one/);
+    expect(reason(q(`{}`))).toMatch(/^400 invalid GraphQL: .*exactly one/);
   });
 });

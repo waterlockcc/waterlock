@@ -1,11 +1,14 @@
 import type { CredentialSource } from "../../core/credentials.js";
 import type { ProviderRequest } from "../../core/policy.js";
 import { createProvider } from "../../core/provider.js";
+import { buildSchema, type GraphQLSchema } from "graphql";
 import { createGraphqlMatcher } from "../../graphql/index.js";
-import { linearGraphqlTable, type LinearAction, type LinearParams } from "./generated.js";
+import { linearSdl, type LinearAction, type LinearParams } from "./generated.js";
 
 export type * from "./generated.js";
-export { linearGraphqlTable } from "./generated.js";
+export { linearSdl } from "./generated.js";
+
+let schema: GraphQLSchema | undefined; // built once (~100ms), on first linear() call
 
 /**
  * What Linear rules see. Narrow on `action` to get typed params, e.g.
@@ -24,7 +27,7 @@ export function linear(opts: {
   return createProvider<LinearRequest>({
     id: "linear",
     upstream: opts.upstream ?? "https://api.linear.app",
-    graphql: { endpoint: "/graphql", matcher: createGraphqlMatcher(linearGraphqlTable) },
+    graphql: { endpoint: "/graphql", matcher: createGraphqlMatcher({ provider: "linear", schema: (schema ??= buildSchema(linearSdl)) }) },
     credentials: opts.credentials,
     ...(opts.auth === "apiKey" ? { inject: ({ headers, credential }) => headers.set("authorization", credential.token) } : {}),
   });

@@ -1,19 +1,25 @@
 import type { GraphQLArgument, GraphQLField, GraphQLInputField, GraphQLInputType, GraphQLNamedType, GraphQLObjectType } from "graphql";
-import type { GraphqlField, GraphqlInputValue, GraphqlTable } from "../core/types.js";
 import type { CodegenConfig } from "./config.js";
 
 export interface GenerateGraphqlResult {
   code: string;
   report: string;
-  table: GraphqlTable;
+  /** Every action, e.g. `linear.mutation.issueCreate`. */
+  actions: string[];
+}
+
+interface InputValue {
+  type: string; // SDL notation, e.g. "[String!]!"
+  hasDefault: boolean;
 }
 
 const BUILTIN_TS: Record<string, string> = { String: "string", ID: "string", Int: "number", Float: "number", Boolean: "boolean" };
 
 /**
- * GraphQL SDL -> action table + types. Each top-level `query` and `mutation` field is one
- * action (`<provider>.<operation>.<field>`); its arguments are the params. Subscriptions are
- * skipped. Only input and enum types reachable from those arguments are emitted.
+ * GraphQL SDL -> action union, typed params and the schema the matcher validates against.
+ * Each top-level `query` and `mutation` field is one action (`<provider>.<operation>.<field>`);
+ * its arguments are the params. Subscriptions are skipped. The emitted SDL has descriptions
+ * stripped (they don't affect validation or coercion).
  */
 export async function generateGraphql(sdl: string, config: CodegenConfig): Promise<GenerateGraphqlResult> {
   const g = await import("graphql"); // optional peer: only GraphQL codegen needs it
@@ -21,123 +27,92 @@ export async function generateGraphql(sdl: string, config: CodegenConfig): Promi
   const P = config.typePrefix;
   const scalars = { ...BUILTIN_TS, ...config.scalars };
 
-  const inputs: GraphqlTable["inputs"] = {};
-  const enums: Record<string, string[]> = {};
+  // Input and enum types reachable from top-level arguments: these get TS types.
+  const inputs = new Map<string, Map<string, InputValue>>();
+  const enums = new Map<string, string[]>();
   const custom = new Set<string>();
+  const inputValue = (v: GraphQLArgument | GraphQLInputField): InputValue => ({ type: String(v.type), hasDefault: v.astNode?.defaultValue !== undefined });
   const visit = (type: GraphQLInputType): void => {
     const named = g.getNamedType(type) as GraphQLNamedType;
-    if (named.name in inputs || named.name in enums || named.name in BUILTIN_TS) return;
+    if (inputs.has(named.name) || enums.has(named.name) || named.name in BUILTIN_TS) return;
     if (g.isEnumType(named)) {
-      enums[named.name] = named.getValues().map((v) => v.name);
+      enums.set(named.name, named.getValues().map((v) => v.name));
     } else if (g.isInputObjectType(named)) {
-      const fields: Record<string, GraphqlInputValue> = {};
-      (inputs as Record<string, unknown>)[named.name] = { fields, ...(named.isOneOf ? { oneOf: true } : {}) };
+      const fields = new Map<string, InputValue>();
+      inputs.set(named.name, fields);
       for (const f of Object.values(named.getFields())) {
-        fields[f.name] = inputValue(f);
+        fields.set(f.name, inputValue(f));
         visit(f.type);
       }
     } else custom.add(named.name);
   };
-  const inputValue = (v: GraphQLArgument | GraphQLInputField): GraphqlInputValue => {
-    const literal = v.astNode?.defaultValue;
-    return { type: String(v.type), ...(literal ? { default: g.valueFromASTUntyped(literal) } : {}) };
-  };
 
-  const fields: GraphqlField[] = [];
-  const descriptions = new Map<string, string>();
-  const roots = { query: schema.getQueryType(), mutation: schema.getMutationType() } as const;
+  const fields: { action: string; operation: "query" | "mutation"; args: [string, InputValue][]; description?: string }[] = [];
   for (const operation of ["query", "mutation"] as const) {
-    const root: GraphQLObjectType | null | undefined = roots[operation];
-    if (!root) continue;
-    for (const f of Object.values(root.getFields()) as GraphQLField<unknown, unknown>[]) {
-      const action = `${config.provider}.${operation}.${f.name}`;
-      const args: Record<string, GraphqlInputValue> = {};
-      for (const a of f.args) {
-        args[a.name] = inputValue(a);
+    const root: GraphQLObjectType | null | undefined = operation === "query" ? schema.getQueryType() : schema.getMutationType();
+    for (const f of Object.values(root?.getFields() ?? {}) as GraphQLField<unknown, unknown>[]) {
+      const args = f.args.map((a): [string, InputValue] => {
         visit(a.type);
-      }
-      fields.push({ action, operation, name: f.name, args });
-      if (f.description) descriptions.set(action, f.description.split("\n")[0]!.trim());
+        return [a.name, inputValue(a)];
+      });
+      const description = f.description?.split("\n")[0]!.trim();
+      fields.push({ action: `${config.provider}.${operation}.${f.name}`, operation, args, ...(description ? { description } : {}) });
     }
   }
   fields.sort((a, b) => byCodeUnit(a.action, b.action));
 
-  const table: GraphqlTable = {
-    provider: config.provider,
-    source: { kind: "graphql", title: config.source.title ?? config.provider, ...(config.source.url ? { url: config.source.url } : {}) },
-    roots: { query: roots.query!.name, ...(roots.mutation ? { mutation: roots.mutation.name } : {}) },
-    fields,
-    inputs: sortKeys(inputs),
-    enums: sortKeys(enums),
-  };
-
-  // TS for a type ref: lists and nullability from the SDL notation, names from the table.
+  // TS for a type ref: lists and nullability from the SDL notation.
   const ts = (ref: string): string => {
     const t = ref.endsWith("!") ? ref.slice(0, -1) : ref;
     const base = t.startsWith("[") ? `${wrap(ts(t.slice(1, -1)))}[]` : named(t);
     return ref.endsWith("!") || base === "unknown" ? base : `${base} | null`;
   };
   const wrap = (s: string) => (s.includes(" ") ? `(${s})` : s);
-  const named = (name: string) => (name in table.inputs || name in table.enums ? `${P}${name}` : (scalars[name] ?? "unknown"));
-  const member = (name: string, v: GraphqlInputValue) => `${name}${v.type.endsWith("!") || v.default !== undefined ? "" : "?"}: ${ts(v.type)};`;
+  const named = (name: string) => (inputs.has(name) || enums.has(name) ? `${P}${name}` : (scalars[name] ?? "unknown"));
+  // Absent only if nullable without a default: graphql-js fills defaults in.
+  const member = (name: string, v: InputValue) => `${name}${v.type.endsWith("!") || v.hasDefault ? "" : "?"}: ${ts(v.type)};`;
 
-  const typesImport = config.typesImport ?? "@waterlock/gateway";
+  // Schema the gateway validates against, without descriptions.
+  const stripped = g.print(
+    g.visit(g.parse(sdl, { noLocation: true }), {
+      enter: (node) => ("description" in node && node.description ? { ...node, description: undefined } : undefined),
+    }),
+  );
+
   const out: string[] = [
     `// GENERATED by waterlock codegen. Do not edit by hand.`,
-    `// Source: ${table.source.title} GraphQL schema`,
+    `// Source: ${config.source.title ?? config.provider} GraphQL schema`,
     `// Regenerate with the codegen CLI after changing ${config.provider}.config.ts or the pinned schema.`,
-    ``,
-    `import type { GraphqlTable } from ${JSON.stringify(typesImport)};`,
     ``,
     `export type ${P}Action =`,
     ...fields.map((f, i) => `  | ${JSON.stringify(f.action)}${i === fields.length - 1 ? ";" : ""}`),
     ``,
     `/** Arguments of each top-level field, as seen by policy rules (defaults filled in). */`,
     `export interface ${P}Params {`,
-  ];
-  for (const f of fields) {
-    const args = Object.entries(f.args);
-    out.push(
-      args.length === 0
+    ...fields.map((f) =>
+      f.args.length === 0
         ? `  ${JSON.stringify(f.action)}: Record<string, never>;`
-        : `  ${JSON.stringify(f.action)}: { ${args.map(([n, v]) => member(n, v)).join(" ")} };`,
-    );
-  }
-  out.push(`}`, ``);
-  for (const [name, values] of Object.entries(table.enums)) {
-    out.push(`export type ${P}${name} = ${values.map((v) => JSON.stringify(v)).join(" | ")};`);
-  }
-  out.push(``);
-  for (const [name, input] of Object.entries(table.inputs)) {
-    const members = Object.entries(input.fields).map(([n, v]) => member(n, v));
-    out.push(`export interface ${P}${name} { ${members.join(" ")} }`);
-  }
-  out.push(
+        : `  ${JSON.stringify(f.action)}: { ${f.args.map(([n, v]) => member(n, v)).join(" ")} };`,
+    ),
+    `}`,
     ``,
-    `export const ${config.provider}GraphqlTable: GraphqlTable = {`,
-    `  provider: ${JSON.stringify(table.provider)},`,
-    `  source: ${JSON.stringify(table.source)},`,
-    `  roots: ${JSON.stringify(table.roots)},`,
-    `  fields: [`,
-    ...fields.map((f) => `    ${JSON.stringify(f)},`),
-    `  ],`,
-    `  inputs: {`,
-    ...Object.entries(table.inputs).map(([n, v]) => `    ${n}: ${JSON.stringify(v)},`),
-    `  },`,
-    `  enums: {`,
-    ...Object.entries(table.enums).map(([n, v]) => `    ${n}: ${JSON.stringify(v)},`),
-    `  },`,
-    `};`,
+    ...sorted(enums).map(([name, values]) => `export type ${P}${name} = ${values.map((v) => JSON.stringify(v)).join(" | ")};`),
     ``,
-  );
+    ...sorted(inputs).map(([name, f]) => `export interface ${P}${name} { ${[...f].map(([n, v]) => member(n, v)).join(" ")} }`),
+    ``,
+    `/** The upstream schema (descriptions stripped). The matcher validates every request against it. */`,
+    `export const ${config.provider}Sdl = ${JSON.stringify(stripped)};`,
+    ``,
+  ];
 
-  const queries = fields.filter((f) => f.operation === "query");
   const mutations = fields.filter((f) => f.operation === "mutation");
-  const unmapped = [...custom].filter((s) => !(s in scalars)).sort();
+  const queries = fields.filter((f) => f.operation === "query");
+  const unmapped = [...custom].filter((s) => !(s in scalars)).sort(byCodeUnit);
+  const list = (fs: typeof fields) => fs.map((f) => `- \`${f.action}\`${f.description ? ` ${f.description}` : ""}`);
   const report: string[] = [
     `# ${config.provider} codegen report`,
     ``,
-    `Source: ${table.source.title} GraphQL schema`,
+    `Source: ${config.source.title ?? config.provider} GraphQL schema`,
     ``,
     `- ${fields.length} actions: ${mutations.length} mutations, ${queries.length} queries`,
     `- Nested selections are not governed: an allowed query can read anything reachable from its field.`,
@@ -145,19 +120,19 @@ export async function generateGraphql(sdl: string, config: CodegenConfig): Promi
     ``,
     `## Mutations`,
     ``,
-    ...mutations.map((f) => `- \`${f.action}\`${descriptions.has(f.action) ? ` ${descriptions.get(f.action)}` : ""}`),
+    ...list(mutations),
     ``,
     `## Queries`,
     ``,
-    ...queries.map((f) => `- \`${f.action}\`${descriptions.has(f.action) ? ` ${descriptions.get(f.action)}` : ""}`),
+    ...list(queries),
     ``,
   ];
 
-  return { code: out.join("\n"), report: report.join("\n"), table };
+  return { code: out.join("\n"), report: report.join("\n"), actions: fields.map((f) => f.action) };
 }
 
-function sortKeys<T>(o: Record<string, T>): Record<string, T> {
-  return Object.fromEntries(Object.entries(o).sort(([a], [b]) => byCodeUnit(a, b)));
+function sorted<T>(m: Map<string, T>): [string, T][] {
+  return [...m].sort(([a], [b]) => byCodeUnit(a, b));
 }
 
 /** Locale-independent, so generated output is identical on every machine. */

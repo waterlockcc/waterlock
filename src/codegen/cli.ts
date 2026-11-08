@@ -42,7 +42,7 @@ async function main(): Promise<void> {
   if (config.source.kind === "graphql") {
     const result = await generateGraphql(source, config);
     ({ code, report } = result);
-    summary = `${result.table.fields.length} actions`;
+    summary = `${result.actions.length} actions`;
   } else {
     const doc = JSON.parse(source);
     const spec =
