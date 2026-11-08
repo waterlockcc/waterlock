@@ -1,0 +1,6 @@
+{
+  "name": "ai-sdk-linear-triage-harness",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "tsx --env-file-if-exists=.env index.ts" }
+}
