@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createMatcher } from "../src/core/match.js";
+import type { Operation } from "../src/core/types.js";
 import { gmailTable } from "../src/providers/gmail/generated.js";
 
 const { match } = createMatcher(gmailTable, {
@@ -28,16 +29,44 @@ describe("matcher", () => {
     });
   });
 
-  it("prefers literal route over template", () => {
-    expect(
-      match("POST", "/gmail/v1/users/me/messages/send", q()),
-    ).toMatchObject({ ok: true, op: { action: "gmail.users.messages.send" } });
-    expect(
-      match("GET", "/gmail/v1/users/me/messages/abc123", q()),
-    ).toMatchObject({
-      ok: true,
-      op: { action: "gmail.users.messages.get" },
-      params: { id: "abc123" },
+  it("prefers the most literal route; equal ones are ambiguous", () => {
+    // Gmail has no same-method routes that overlap, so use a tiny table.
+    const op = (action: string, path: string): Operation => ({
+      action,
+      method: "GET",
+      path,
+      variant: "standard",
+      hasBody: false,
+      params: [...path.matchAll(/\{([^}]+)\}/g)].map((m) => ({
+        name: m[1]!,
+        in: "path",
+        type: "string",
+        required: true,
+      })),
+    });
+    const { match } = createMatcher(
+      {
+        ...gmailTable,
+        operations: [
+          op("t.items.get", "/items/{id}"),
+          op("t.items.latest", "/items/latest"),
+          op("t.a", "/x/{p}/y"),
+          op("t.b", "/x/y/{p}"),
+        ],
+      },
+      { allowedGlobalQueryParams: [] },
+    );
+    expect(match("GET", "/items/latest", q())).toMatchObject({
+      op: { action: "t.items.latest" },
+    });
+    expect(match("GET", "/items/abc", q())).toMatchObject({
+      op: { action: "t.items.get" },
+      params: { id: "abc" },
+    });
+    expect(match("GET", "/x/y/y", q())).toMatchObject({
+      ok: false,
+      status: 400,
+      reason: "ambiguous route: t.a vs t.b",
     });
   });
 
