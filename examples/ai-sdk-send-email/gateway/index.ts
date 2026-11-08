@@ -27,8 +27,9 @@ const USER_PROMPT =
   process.env.USER_PROMPT ??
   "I am alice@acme.com. Email me a reminder to buy milk. Then email bob@acme.com saying hi.";
 
-// Claude Code as a plain model: no tools, no MCP, no claude.ai connectors (they'd reach your
-// real accounts). This provider takes the system prompt as a setting, not via generateText.
+// Claude Code as a plain model: no tools, no MCP, no claude.ai connectors
+// (they'd reach your real accounts). This provider takes the system prompt as a
+// setting, not via generateText.
 const checkModel = claudeCode("haiku", {
   systemPrompt: checkSystemPrompt,
   tools: [],
@@ -37,11 +38,13 @@ const checkModel = claudeCode("haiku", {
 });
 
 const sessions = createSessions({
-  // Random per start unless set: only this process mints and verifies, so no shared key is needed.
+  // Random per start unless set: only this process mints and verifies, so no
+  // shared key is needed.
   signingKey:
     process.env.WATERLOCK_SIGNING_KEY ??
     crypto.randomUUID() + crypto.randomUUID(),
-  store: memoryStore(), // enables user messages for checks; omit for stateless sessions
+  // Enables user messages for checks; omit for stateless sessions.
+  store: memoryStore(),
 });
 
 const gateway = createGateway({
@@ -53,7 +56,8 @@ const gateway = createGateway({
           upstream: await startFakeGmail(),
         }),
   ],
-  // Rules are typed from `providers`: autocomplete on actions, params and decoded context.
+  // Rules are typed from `providers`: autocomplete on actions, params and
+  // decoded context.
   policy: [
     {
       when: (r) =>
@@ -62,12 +66,14 @@ const gateway = createGateway({
         r.context.recipients.every((addr) => addr === r.session.onBehalfOf),
       reason: "You can only send email to yourself.",
     },
-    // Plain-language rows: answered by `check` below, only once a function row allows. Deny-only.
+    // Plain-language rows: answered by `check` below, only once a function row
+    // allows. Deny-only.
     { when: "The email contains billing information", action: "deny" },
     { when: "The user did not ask for this email to be sent", action: "deny" },
   ],
-  // Answers plain-language rows: our own AI SDK call, using the lib's prompt + schema.
-  // checkPrompt reads the user messages from the store, keyed by the verified session token.
+  // Answers plain-language rows: our own AI SDK call, using the lib's prompt +
+  // schema. checkPrompt reads the user messages from the store, keyed by the
+  // verified session token.
   check: async ({ condition, request, store, signal }) => {
     const { output } = await generateText({
       model: checkModel,
@@ -80,8 +86,8 @@ const gateway = createGateway({
   sessions,
 });
 
-// Stand-in for the trusted front door: mint a session, record what the human said,
-// then hand the harness its token + the same prompt via a file.
+// Stand-in for the trusted front door: mint a session, record what the human
+// said, then hand the harness its token + the same prompt via a file.
 const { token, claims } = await sessions.mint({
   provider: "gmail",
   agent: "assistant",

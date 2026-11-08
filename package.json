@@ -56,7 +56,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"**/*.ts\"",
-    "format:check": "prettier --check \"**/*.ts\""
+    "format:check": "prettier --check \"**/*.ts\" && tsx scripts/comment-width.ts"
   },
   "dependencies": {
     "graphql": "^17.0.2",

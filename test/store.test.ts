@@ -11,7 +11,7 @@ import {
 import { gmail } from "../src/providers/gmail/index.js";
 import { fakeUpstream } from "./fixtures/fake-upstream.js";
 
-const KEY = "test-signing-key-0123456789abcdef"; // gitleaks:allow (fixed test key)
+const KEY = "test-signing-key-0123456789abcdef"; // gitleaks:allow
 const SELF = "alice@acme.com";
 
 const sendRequest = (token: string, to = SELF) =>

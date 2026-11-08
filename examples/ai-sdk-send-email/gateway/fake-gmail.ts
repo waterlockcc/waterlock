@@ -2,7 +2,10 @@ import { once } from "node:events";
 import type { AddressInfo } from "node:net";
 import { serve } from "@hono/node-server";
 
-/** Stand-in Gmail for runs without GMAIL_ACCESS_TOKEN: accepts every call, sends nothing. */
+/**
+ * Stand-in Gmail for runs without GMAIL_ACCESS_TOKEN: accepts every call, sends
+ * nothing.
+ */
 export async function startFakeGmail(): Promise<string> {
   const server = serve({
     port: 0,

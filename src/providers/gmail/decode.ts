@@ -1,10 +1,11 @@
 import PostalMime, { type Address } from "postal-mime";
 
 /**
- * Gmail sends opaque base64url RFC 822 in `raw`. Recipients live in the MIME headers and
- * content in (possibly nested, encoded) MIME parts, so policy can't see either without
- * decoding. postal-mime does the parsing; it is lenient like a mail client, so the checks
- * below turn anything ambiguous into a throw, which denies the call.
+ * Gmail sends opaque base64url RFC 822 in `raw`. Recipients live in the MIME
+ * headers and content in (possibly nested, encoded) MIME parts, so policy can't
+ * see either without decoding. postal-mime does the parsing; it is lenient like
+ * a mail client, so the checks below turn anything ambiguous into a throw,
+ * which denies the call.
  */
 
 export interface GmailAttachment {
@@ -17,9 +18,15 @@ export interface GmailMessageContext {
   recipients: string[];
   recipient_domains: string[];
   subject: string | null;
-  /** The text/plain body as sent. Null when the message has none (e.g. HTML-only). */
+  /**
+   * The text/plain body as sent. Null when the message has none (e.g.
+   * HTML-only).
+   */
   text: string | null;
-  /** The text/html body as sent, markup included. Null when the message has none. */
+  /**
+   * The text/html body as sent, markup included. Null when the message has
+   * none.
+   */
   html: string | null;
   attachments: GmailAttachment[];
 }
@@ -77,7 +84,10 @@ function parseJson(body: Uint8Array): Record<string, unknown> {
   return parsed as Record<string, unknown>;
 }
 
-/** Strict on purpose: no quotes, spaces, brackets or comments. Anything fancier denies. */
+/**
+ * Strict on purpose: no quotes, spaces, brackets or comments. Anything fancier
+ * denies.
+ */
 const ADDR = /^[^\s@<>()",;:[\]\\]+@[A-Za-z0-9.-]+$/;
 
 async function fromRaw(raw: unknown): Promise<GmailMessageContext> {
@@ -121,8 +131,9 @@ async function fromRaw(raw: unknown): Promise<GmailMessageContext> {
 
 /**
  * postal-mime keeps going on malformed lists: `a@x <b@y> <c@z>` yields b@y with
- * "a@x c@z" as the display name. Gmail may read that differently, so: every address must
- * be plain, and an address-like display name is only accepted when it was quoted or a comment.
+ * "a@x c@z" as the display name. Gmail may read that differently, so: every
+ * address must be plain, and an address-like display name is only accepted when
+ * it was quoted or a comment.
  */
 function addresses(
   list: Address[] | undefined,
@@ -146,9 +157,9 @@ function addresses(
 }
 
 /**
- * Lenient parsing can drop content it doesn't understand (e.g. a broken multipart boundary),
- * which a content check would then never see. Deny when a non-empty body produced nothing,
- * or a top-level multipart is never closed.
+ * Lenient parsing can drop content it doesn't understand (e.g. a broken
+ * multipart boundary), which a content check would then never see. Deny when a
+ * non-empty body produced nothing, or a top-level multipart is never closed.
  */
 function assertBodyParsed(
   bytes: Uint8Array,

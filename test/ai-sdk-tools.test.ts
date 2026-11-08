@@ -13,7 +13,7 @@ import { createSendEmailTools } from "./fixtures/send-email-tool.js";
 
 const SELF = "alice@acme.com";
 const sessions = createSessions({
-  signingKey: "test-signing-key-0123456789abcdef", // gitleaks:allow (fixed test key)
+  signingKey: "test-signing-key-0123456789abcdef", // gitleaks:allow
 });
 let up: Awaited<ReturnType<typeof fakeUpstream>>;
 let server: ServerType;
@@ -63,7 +63,8 @@ describe("AI SDK tools through the gateway", () => {
     oauth.setCredentials({ access_token: token });
     const api = gmail({ version: "v1", auth: oauth, rootUrl });
 
-    // Step 1: model calls sendEmail three times. Step 2: model replies with text.
+    // Step 1: model calls sendEmail three times. Step 2: model replies with
+    // text.
     const model = new MockLanguageModelV4({
       doGenerate: [
         {

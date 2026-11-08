@@ -57,7 +57,8 @@ export function fromOpenAPI(
       for (const p of [...shared, ...(op.parameters ?? [])]) {
         const resolved = resolveParam(doc, p);
         if (resolved.in !== "path" && resolved.in !== "query") continue;
-        byKey.set(`${resolved.in}:${resolved.name}`, toParam(resolved)); // op-level overrides path-level
+        // Op-level overrides path-level.
+        byKey.set(`${resolved.in}:${resolved.name}`, toParam(resolved));
       }
 
       operations.push({

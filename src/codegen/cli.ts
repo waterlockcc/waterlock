@@ -4,7 +4,7 @@
  *
  *   tsx src/codegen/cli.ts <config.ts> [--fetch] [--check]
  *
- *   --fetch  download the spec from `source.url` and overwrite the pinned file first
+ *   --fetch  download the spec from `source.url`, overwrite the pinned file
  *   --check  fail if generated output differs from what's on disk (for CI)
  */
 import { readFile, writeFile } from "node:fs/promises";

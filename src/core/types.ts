@@ -26,7 +26,8 @@ export interface ParamSpec {
  * `/upload/...` and `/resumable/upload/...` twins for media methods — each is
  * a separate route to the same action and must be governed the same way.
  */
-export type OperationVariant = "standard" | "upload" | "resumable"; // may gain members later
+// May gain members later.
+export type OperationVariant = "standard" | "upload" | "resumable";
 
 export interface Operation {
   action: string;
@@ -54,9 +55,15 @@ export type GraphqlMatchResult =
   | {
       ok: true;
       action: string;
-      /** Arguments of the top-level field: variables filled in, coerced to the schema, defaults applied. */
+      /**
+       * Arguments of the top-level field: variables filled in, coerced to the
+       * schema, defaults applied.
+       */
       params: Record<string, unknown>;
-      /** JSON body to forward: the parsed document re-printed, so upstream runs exactly what was checked. */
+      /**
+       * JSON body to forward: the parsed document re-printed, so upstream runs
+       * exactly what was checked.
+       */
       body: string;
     }
   | { ok: false; status: 400 | 404; reason: string };

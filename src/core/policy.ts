@@ -1,6 +1,9 @@
 import type { SessionClaims } from "./session.js";
 
-/** What a rule sees. Providers narrow this with literal action/param types (autocomplete only). */
+/**
+ * What a rule sees. Providers narrow this with literal action/param types
+ * (autocomplete only).
+ */
 export interface ProviderRequest<
   P extends string = string,
   A extends string = string,
@@ -11,7 +14,10 @@ export interface ProviderRequest<
   action: A;
   /** Typed path + query params, parsed by the matcher. */
   params: Params;
-  /** Fields extracted from the body by a provider decoder (e.g. Gmail recipients). */
+  /**
+   * Fields extracted from the body by a provider decoder (e.g. Gmail
+   * recipients).
+   */
   context: Ctx;
   session: SessionClaims;
 }
@@ -21,13 +27,17 @@ export type AnyRequest = ProviderRequest;
 /**
  * One policy row. `when` is either:
  *   - a sync function over the request (static), allow or deny, or
- *   - a plain-language condition answered by the gateway's `check` (e.g. an LLM). These
- *     rows can only deny: a model can narrow what's allowed, never grant it.
+ *   - a plain-language condition answered by the gateway's `check` (e.g. an
+ *     LLM). These rows can only deny: a model can narrow what's allowed, never
+ *     grant it.
  */
 export type PolicyRule<R extends AnyRequest = AnyRequest> =
   | {
       when: (r: R) => boolean;
-      /** Effect when the rule matches. Default "allow". May gain members later (e.g. "approve"). */
+      /**
+       * Effect when the rule matches. Default "allow". May gain members later
+       * (e.g. "approve").
+       */
       action?: "allow" | "deny";
       /** Context for the calling agent when this rule decides the outcome. */
       reason?: string;

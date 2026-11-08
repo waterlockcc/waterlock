@@ -1,6 +1,9 @@
 import type { HttpMethod, OperationVariant, ParamSpec } from "../core/types.js";
 
-/** Spec-format-neutral view of an API. Discovery and OpenAPI both normalize into this. */
+/**
+ * Spec-format-neutral view of an API. Discovery and OpenAPI both normalize into
+ * this.
+ */
 export interface NormalizedSpec {
   kind: "discovery" | "openapi";
   title: string;

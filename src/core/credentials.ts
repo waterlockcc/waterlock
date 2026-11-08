@@ -1,11 +1,17 @@
 import type { SessionClaims } from "./session.js";
 
-/** Upstream credential. An object so it can gain fields (expiresAt, type, headers...) later. */
+/**
+ * Upstream credential. An object so it can gain fields (expiresAt, type,
+ * headers...) later.
+ */
 export interface Credential {
   token: string;
 }
 
-/** Returns the real upstream credential for this session. Runs only inside the gateway. */
+/**
+ * Returns the real upstream credential for this session. Runs only inside the
+ * gateway.
+ */
 export type CredentialSource = (input: {
   session: SessionClaims;
 }) => Promise<Credential>;

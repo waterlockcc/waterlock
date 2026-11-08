@@ -8,7 +8,8 @@ export const policy = definePolicy<GmailRequest>([
       (r.action.endsWith(".get") || r.action.endsWith(".list")),
   },
   { when: (r) => r.action.startsWith("gmail.users.drafts.") },
-  // Every recipient must be internal. `every` on the recipient list, not "contains acme.com".
+  // Every recipient must be internal. `every` on the recipient list, not
+  // "contains acme.com".
   {
     when: (r) =>
       r.action === "gmail.users.messages.send" &&
@@ -37,7 +38,8 @@ export const policy = definePolicy<GmailRequest>([
     action: "deny",
     reason: "List at most 50 messages per page.",
   },
-  // Recipients of a stored draft are unknown to the gateway (context is null), so never send drafts.
+  // Recipients of a stored draft are unknown to the gateway (context is null),
+  // so never send drafts.
   {
     when: (r) => r.action === "gmail.users.drafts.send",
     action: "deny",

@@ -12,11 +12,14 @@ import {
 export type * from "./generated.js";
 export { linearSdl } from "./generated.js";
 
-let schema: GraphQLSchema | undefined; // built once (~100ms), on first linear() call
+// Built once (~100ms), on the first linear() call.
+let schema: GraphQLSchema | undefined;
 
 /**
  * What Linear rules see. Narrow on `action` to get typed params, e.g.
- * `r.action === "linear.mutation.issueCreate" && r.params.input.teamId === TEAM`.
+ *
+ *   r.action === "linear.mutation.issueCreate" &&
+ *     r.params.input.teamId === TEAM
  */
 export type LinearRequest = {
   [A in LinearAction]: ProviderRequest<
@@ -29,7 +32,10 @@ export type LinearRequest = {
 
 export function linear(opts: {
   credentials: CredentialSource;
-  /** `oauth` (default) sends `Authorization: Bearer <token>`; `apiKey` sends a personal API key as-is. */
+  /**
+   * `oauth` (default) sends `Authorization: Bearer <token>`; `apiKey` sends a
+   * personal API key as-is.
+   */
   auth?: "oauth" | "apiKey";
   upstream?: string;
 }) {

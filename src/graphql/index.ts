@@ -26,14 +26,16 @@ export interface GraphqlMatcherOptions {
 }
 
 /**
- * Matches a GraphQL request body the way the REST matcher matches a URL: one request is one
- * action, named after its top-level field (`linear.mutation.issueCreate`). Arguments, coerced
- * by graphql-js exactly as the upstream server does, become `params`. Nested selections are not
- * policy: they only shape the response, so reads reachable from an allowed field are limited
- * by the upstream token's scopes, not by rules.
+ * Matches a GraphQL request body the way the REST matcher matches a URL: one
+ * request is one action, named after its top-level field
+ * (`linear.mutation.issueCreate`). Arguments, coerced by graphql-js exactly as
+ * the upstream server does, become `params`. Nested selections are not policy:
+ * they only shape the response, so reads reachable from an allowed field are
+ * limited by the upstream token's scopes, not by rules.
  *
- * Rejected rather than guessed at: anything that fails schema validation, batches, several
- * operations or top-level fields in one request, subscriptions, persisted queries (no query text).
+ * Rejected rather than guessed at: anything that fails schema validation,
+ * batches, several operations or top-level fields in one request,
+ * subscriptions, persisted queries (no query text).
  */
 export function createGraphqlMatcher(
   opts: GraphqlMatcherOptions,
@@ -54,7 +56,8 @@ export function createGraphqlMatcher(
       try {
         return match(raw);
       } catch (err) {
-        // Fail closed on anything unexpected (e.g. stack overflow on pathological documents).
+        // Fail closed on anything unexpected (e.g. stack overflow on
+        // pathological documents).
         return bad(`could not process GraphQL request: ${message(err)}`);
       }
     },
@@ -92,7 +95,8 @@ export function createGraphqlMatcher(
     try {
       invalid = validate(schema, doc, undefined, { maxErrors: 1 });
     } catch (err) {
-      // graphql 17.0.2 overflows the stack on some fragment cycles instead of reporting them.
+      // graphql 17.0.2 overflows the stack on some fragment cycles instead of
+      // reporting them.
       return bad(
         `invalid GraphQL: ${err instanceof RangeError ? "document too deeply nested or cyclic" : message(err)}`,
       );
@@ -133,7 +137,8 @@ export function createGraphqlMatcher(
       );
     }
     const node = real[0]!;
-    const field = root.getFields()[node.name.value]; // introspection fields (__schema, __type) aren't here: denied
+    // Introspection fields (__schema, __type) aren't here: denied.
+    const field = root.getFields()[node.name.value];
     if (!field)
       return {
         ok: false,
@@ -155,7 +160,8 @@ export function createGraphqlMatcher(
       return bad(message(err));
     }
 
-    // Forward what was parsed, not the original text: no room for the two parsers to disagree.
+    // Forward what was parsed, not the original text: no room for the two
+    // parsers to disagree.
     const body = JSON.stringify({
       query: print(doc),
       ...(variables != null ? { variables } : {}),
@@ -171,8 +177,9 @@ export function createGraphqlMatcher(
 }
 
 /**
- * Top-level fields of an operation, including those inside fragments on the root type. Fields
- * under `@skip`/`@include` count as present. Validation already rejected unknown and cyclic fragments.
+ * Top-level fields of an operation, including those inside fragments on the
+ * root type. Fields under `@skip`/`@include` count as present. Validation
+ * already rejected unknown and cyclic fragments.
  */
 function collectRootFields(
   set: SelectionSetNode,

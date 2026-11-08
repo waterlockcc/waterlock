@@ -260,11 +260,13 @@ describe("check helpers", () => {
   });
 });
 
-// Compile-time checks: these lines must fail typecheck. `pnpm typecheck` covers them.
+// Compile-time checks: these lines must fail typecheck. `pnpm typecheck` covers
+// them.
 definePolicy<GmailRequest>([
   // @ts-expect-error typo in action name
   { when: (r) => r.action === "gmail.users.mesages.send" },
-  // @ts-expect-error recipient_domains only exists once narrowed to messages.send
+  // recipient_domains only exists once narrowed to messages.send
+  // @ts-expect-error
   { when: (r) => r.context.recipient_domains.every((d) => d === "acme.com") },
   // @ts-expect-error maxResults only exists on list actions
   { when: (r) => r.params.maxResults > 10 },
@@ -305,7 +307,8 @@ function _gatewayTypes() {
   });
   createGateway({
     providers: [gmail({ credentials: staticToken({ token: "t" }) }), other],
-    // @ts-expect-error Gmail-only policy can't govern a gateway that also serves "other"
+    // Gmail-only policy can't govern a gateway that also serves "other"
+    // @ts-expect-error
     policy: gmailOnly,
     sessions,
   });

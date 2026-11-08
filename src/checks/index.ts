@@ -1,6 +1,6 @@
 /**
- * Optional helpers for writing a `check` function with the AI SDK (or any LLM client).
- * The gateway never calls a model itself; you do, with these pieces.
+ * Optional helpers for writing a `check` function with the AI SDK (or any LLM
+ * client). The gateway never calls a model itself; you do, with these pieces.
  *
  *   check: async ({ condition, request, store, signal }) => {
  *     const { output } = await generateText({
@@ -35,8 +35,9 @@ export const verdictSchema = z.object({
 export type Verdict = z.infer<typeof verdictSchema>;
 
 /**
- * User prompt: the condition, the human's messages (read from `store` when it implements
- * `getUserMessages`), and the request's action, params and decoded context.
+ * User prompt: the condition, the human's messages (read from `store` when it
+ * implements `getUserMessages`), and the request's action, params and decoded
+ * context.
  */
 export async function checkPrompt(input: {
   condition: string;

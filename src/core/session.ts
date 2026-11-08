@@ -1,17 +1,24 @@
 import type { SessionRef, SessionStore, UserMessage } from "./store.js";
 
 /**
- * Session tokens: the only credential the harness ever holds.
- * Format: `as1.<base64url(claims)>.<base64url(hmac-sha256)>`. HMAC via WebCrypto
- * (constant-time verify). Base64 via Buffer: Node/Bun/Deno, Workers need nodejs_compat.
+ * Session tokens: the only credential the harness ever holds. Format:
+ * `as1.<base64url(claims)>.<base64url(hmac-sha256)>`. HMAC via WebCrypto
+ * (constant-time verify). Base64 via Buffer: Node/Bun/Deno, Workers need
+ * nodejs_compat.
  */
 export interface SessionClaims {
   sid: string;
-  /** Provider id this token is for. The gateway routes by it, so paths may collide across providers. */
+  /**
+   * Provider id this token is for. The gateway routes by it, so paths may
+   * collide across providers.
+   */
   provider: string;
   agent: string;
   onBehalfOf: string;
-  /** Task the session was minted for. Set by the trusted launcher, not the agent. */
+  /**
+   * Task the session was minted for. Set by the trusted launcher, not the
+   * agent.
+   */
   intent?: string;
   iat: number;
   exp: number;
@@ -21,8 +28,9 @@ export interface MintInput {
   /** Provider id this token is for, e.g. `gmail`. One token per provider. */
   provider: string;
   /**
-   * Reuse an existing session id, e.g. to issue a second provider's token for the same session
-   * so both share one store entry (user messages). Default: a new id.
+   * Reuse an existing session id, e.g. to issue a second provider's token for
+   * the same session so both share one store entry (user messages). Default: a
+   * new id.
    */
   sid?: string;
   agent: string;
@@ -41,7 +49,10 @@ export interface Sessions {
   }): Promise<{ claims: SessionClaims } | { error: VerifyError }>;
   /** The configured store, if any. */
   readonly store: SessionStore | undefined;
-  /** Trusted code only: record what the human said. Throws if the store can't hold messages. */
+  /**
+   * Trusted code only: record what the human said. Throws if the store can't
+   * hold messages.
+   */
   addUserMessage(input: {
     session: SessionRef;
     message: UserMessage;
@@ -55,7 +66,10 @@ export function createSessions(opts: {
   signingKey: string | Uint8Array;
   defaultTtlSeconds?: number;
   now?: () => number;
-  /** Optional storage: `memoryStore()`, your own adapter, or omit for stateless tokens. */
+  /**
+   * Optional storage: `memoryStore()`, your own adapter, or omit for stateless
+   * tokens.
+   */
   store?: SessionStore;
 }): Sessions {
   const keyBytes =

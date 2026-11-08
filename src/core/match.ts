@@ -13,8 +13,8 @@ interface CompiledOp {
 
 /**
  * Paths the upstream might interpret differently than we do. Rejected rather
- * than normalized: whatever we match must be exactly what we forward.
- * (WHATWG URL parsing already resolves `.`/`..` segments before we see the path.)
+ * than normalized: whatever we match must be exactly what we forward. (WHATWG
+ * URL parsing already resolves `.`/`..` segments before we see the path.)
  */
 const AMBIGUOUS_PATH = /\/\/|%2f|%5c|\\|%00|%2e/i;
 
@@ -54,7 +54,8 @@ export function createMatcher(
         reason: `method ${method} not allowed on path`,
       };
 
-    // Prefer the most specific template: `/messages/send` beats `/messages/{id}`.
+    // Prefer the most specific template: `/messages/send` beats
+    // `/messages/{id}`.
     candidates.sort((a, b) => b.literalChars - a.literalChars);
     const best = candidates[0]!;
     const tie = candidates.find(

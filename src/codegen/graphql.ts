@@ -30,10 +30,11 @@ const BUILTIN_TS: Record<string, string> = {
 };
 
 /**
- * GraphQL SDL -> action union, typed params and the schema the matcher validates against.
- * Each top-level `query` and `mutation` field is one action (`<provider>.<operation>.<field>`);
- * its arguments are the params. Subscriptions are skipped. The emitted SDL has descriptions
- * stripped (they don't affect validation or coercion).
+ * GraphQL SDL -> action union, typed params and the schema the matcher
+ * validates against. Each top-level `query` and `mutation` field is one action
+ * (`<provider>.<operation>.<field>`); its arguments are the params.
+ * Subscriptions are skipped. The emitted SDL has descriptions stripped (they
+ * don't affect validation or coercion).
  */
 export function generateGraphql(
   sdl: string,
@@ -43,7 +44,8 @@ export function generateGraphql(
   const P = config.typePrefix;
   const scalars = { ...BUILTIN_TS, ...config.scalars };
 
-  // Input and enum types reachable from top-level arguments: these get TS types.
+  // Input and enum types reachable from top-level arguments: these get TS
+  // types.
   const inputs = new Map<string, Map<string, InputValue>>();
   const enums = new Map<string, string[]>();
   const custom = new Set<string>();

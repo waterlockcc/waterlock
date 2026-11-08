@@ -7,7 +7,9 @@ import {
 } from "../../src/checks/index.js";
 import type { Check } from "../../src/index.js";
 
-/** The same check function the examples write, against any (mock) AI SDK model. */
+/**
+ * The same check function the examples write, against any (mock) AI SDK model.
+ */
 export const modelCheck =
   (model: LanguageModel): Check =>
   async ({ condition, request, store, signal }) => {
@@ -30,8 +32,9 @@ const mentionsBilling: Decide = (condition, request) =>
   /billing/i.test(condition) && /billing/i.test(request);
 
 /**
- * AI SDK mock model for `modelCheck`. Answers each condition with `decide`, records the
- * conditions it was asked. `fail` makes every call throw (or hang, with "hang").
+ * AI SDK mock model for `modelCheck`. Answers each condition with `decide`,
+ * records the conditions it was asked. `fail` makes every call throw (or hang,
+ * with "hang").
  */
 export function mockCheckModel(
   opts: {

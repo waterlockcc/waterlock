@@ -17,7 +17,10 @@ export type {
 } from "./decode.js";
 export { gmailTable } from "./generated.js";
 
-/** Hand-written: what each decoder adds to `context`. Everything else has an empty context. */
+/**
+ * Hand-written: what each decoder adds to `context`. Everything else has an
+ * empty context.
+ */
 export interface GmailDecoded {
   "gmail.users.messages.send": GmailMessageContext;
   "gmail.users.drafts.create": GmailMessageContext;

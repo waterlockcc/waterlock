@@ -9,7 +9,10 @@ import {
 import type { OperationTable } from "../src/core/types.js";
 import { fakeUpstream } from "./fixtures/fake-upstream.js";
 
-/** Two providers with the same route: the session token decides which one a request is for. */
+/**
+ * Two providers with the same route: the session token decides which one a
+ * request is for.
+ */
 const graphql = (id: string): OperationTable => ({
   provider: id,
   source: { kind: "openapi", title: id, version: "1" },

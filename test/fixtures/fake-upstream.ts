@@ -11,8 +11,9 @@ export interface SeenRequest {
 }
 
 /**
- * A local HTTP server standing in for a provider API. Point the provider at it with
- * `upstream: up.url`; the gateway then makes real HTTP calls, and `seen` records them.
+ * A local HTTP server standing in for a provider API. Point the provider at it
+ * with `upstream: up.url`; the gateway then makes real HTTP calls, and `seen`
+ * records them.
  */
 export async function fakeUpstream(
   respond: (req: SeenRequest) => Response | Promise<Response> = () =>

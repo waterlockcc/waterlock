@@ -81,7 +81,8 @@ function toOperation(doc: DiscoveryDoc, m: DiscoveryMethod): SpecOperation {
     .map(([name, p]) => toParam(name, p, multiSegment.has(name)))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  // Every template variable must be a declared path param, or the matcher can't type it.
+  // Every template variable must be a declared path param, or the matcher can't
+  // type it.
   for (const [, name] of path.matchAll(/\{\+?([^}]+)\}/g)) {
     if (!params.some((p) => p.in === "path" && p.name === name)) {
       throw new Error(
@@ -125,7 +126,8 @@ function toParam(
 }
 
 function mapType(t: string | undefined): ParamType {
-  // Discovery encodes int64 as type "string", which is what we want (no precision loss).
+  // Discovery encodes int64 as type "string", which is what we want (no
+  // precision loss).
   if (t === "integer" || t === "number" || t === "boolean") return t;
   return "string";
 }

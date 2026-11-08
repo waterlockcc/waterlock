@@ -13,19 +13,26 @@ import type { SessionClaims, Sessions } from "./session.js";
 export interface GatewayOptions<P extends readonly ProviderDefinition[]> {
   providers: P;
   /**
-   * `definePolicy(...)` result, or the rules array inline (typed from `providers`, no type argument).
-   * Must cover every provider's requests: a Gmail-only policy on a Gmail + GitHub gateway won't compile.
+   * `definePolicy(...)` result, or the rules array inline (typed from
+   * `providers`, no type argument). Must cover every provider's requests: a
+   * Gmail-only policy on a Gmail + GitHub gateway won't compile.
    */
   policy: Policy<RequestOf<P>> | PolicyRule<RequestOf<P>>[];
   sessions: Sessions;
-  /** Answers plain-language `when` rows, e.g. with your own AI SDK call. Absent = those rows deny. */
+  /**
+   * Answers plain-language `when` rows, e.g. with your own AI SDK call. Without
+   * it, those rows deny.
+   */
   check?: Check<RequestOf<P>>;
   /** Per-check timeout. Default 60s. */
   checkTimeoutMs?: number;
   maxBodyBytes?: number;
 }
 
-/** Only these request headers reach upstream. Everything else (cookies, method overrides, the session token) is dropped. */
+/**
+ * Only these request headers reach upstream. Everything else (cookies, method
+ * overrides, the session token) is dropped.
+ */
 const FORWARD_REQUEST_HEADERS = [
   "accept",
   "accept-language",
@@ -35,7 +42,9 @@ const FORWARD_REQUEST_HEADERS = [
   "user-agent",
   "x-goog-api-client",
 ];
-/** Some APIs honor these and would let a POST act as a DELETE. Reject outright. */
+/**
+ * Some APIs honor these and would let a POST act as a DELETE. Reject outright.
+ */
 const METHOD_OVERRIDE_HEADERS = [
   "x-http-method-override",
   "x-http-method",
@@ -78,7 +87,8 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
   async function handle(req: Request): Promise<Response> {
     const url = new URL(req.url);
     const method = req.method.toUpperCase();
-    // 1. Authenticate. The signed token names the provider; the agent can't pick another.
+    // 1. Authenticate. The signed token names the provider; the agent can't
+    //    pick another.
     const auth = await authenticate(req, opts.sessions);
     if ("error" in auth) {
       return failRest(
@@ -102,7 +112,8 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
     if (override)
       return failRest(400, "bad_request", `header ${override} not allowed`);
 
-    // 2. Match: the GraphQL endpoint on the body, everything else against the REST operation table.
+    // 2. Match: the GraphQL endpoint on the body, everything else against the
+    //    REST operation table.
     const gql =
       entry.def.graphql && upstreamPath === entry.def.graphql.endpoint
         ? entry.def.graphql
@@ -178,7 +189,8 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
       }
     }
 
-    // Built from the provider's own table and decoder, so it matches that provider's request type.
+    // Built from the provider's own table and decoder, so it matches that
+    // provider's request type.
     const policyReq = {
       provider: entry.def.id,
       action,
@@ -312,7 +324,10 @@ function failRest(
   );
 }
 
-/** GraphQL-style body, so GraphQL clients surface the message: `{ errors: [{ message, extensions: { code, ... } }] }`. */
+/**
+ * GraphQL-style body, so GraphQL clients surface the message:
+ * `{ errors: [{ message, extensions: { code, ... } }] }`.
+ */
 function failGraphql(
   status: number,
   code: string,

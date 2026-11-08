@@ -2,18 +2,22 @@ import type { AnyRequest, Policy, PolicyRule } from "./policy.js";
 import type { SessionStore } from "./store.js";
 
 /**
- * Answers one natural-language `when` condition. You write it: call the AI SDK (or anything)
- * however you like. Helpers for the prompt and output schema live in `@waterlock/gateway/checks`.
+ * Answers one natural-language `when` condition. You write it: call the AI SDK
+ * (or anything) however you like. Helpers for the prompt and output schema live
+ * in `@waterlock/gateway/checks`.
  */
 export type Check<R extends AnyRequest = AnyRequest> = (input: {
   condition: string;
   request: R;
   /**
-   * The gateway's session store (if configured). Read context from it, e.g. user messages
-   * for `request.session`. `checkPrompt` does this for you.
+   * The gateway's session store (if configured). Read context from it, e.g.
+   * user messages for `request.session`. `checkPrompt` does this for you.
    */
   store?: SessionStore;
-  /** Aborted once the decision is made elsewhere. Pass it on, e.g. `generateText({ abortSignal: signal })`. */
+  /**
+   * Aborted once the decision is made elsewhere. Pass it on, e.g.
+   * `generateText({ abortSignal: signal })`.
+   */
   signal: AbortSignal;
 }) => Promise<{ result: boolean; explanation?: string }>;
 
@@ -35,11 +39,12 @@ export interface Decision {
 
 /**
  * 1. Function rules run (sync). Any error or non-boolean denies.
- * 2. A function deny rule matched       -> deny (its reason). No checks run.
- * 3. No allow rule matched              -> deny (allow-rule reasons as hints). No checks run.
- * 4. Policy has no natural-language rows -> allow (nothing left to ask a model).
- * 5. Natural-language deny rules run in parallel. The first `true` denies and aborts the rest;
- *    all `false` allows. Errors, timeouts and malformed answers deny.
+ * 2. A function deny rule matched: deny (its reason). No checks run.
+ * 3. No allow rule matched: deny (allow-rule reasons as hints). No checks run.
+ * 4. Policy has no natural-language rows: allow (nothing left to ask a model).
+ * 5. Natural-language deny rules run in parallel. The first `true` denies and
+ *    aborts the rest; all `false` allows. Errors, timeouts and malformed
+ *    answers deny.
  */
 export async function evaluatePolicy<R extends AnyRequest>(
   policy: Policy<R>,
@@ -57,7 +62,8 @@ export async function evaluatePolicy<R extends AnyRequest>(
     reason,
   });
 
-  const input = Object.freeze({ ...req }); // rules can't mutate what later rules see
+  // Rules can't mutate what later rules see.
+  const input = Object.freeze({ ...req });
   const matched: typeof rules = [];
   for (const r of rules) {
     if (typeof r.rule.when !== "function") continue;
@@ -121,7 +127,8 @@ async function runChecks<R extends AnyRequest>(
 
   const timeoutMs = opts.checkTimeoutMs ?? 60_000;
   const controller = new AbortController();
-  const asked = new Map<string, Promise<Verdict>>(); // same condition in two rows runs once
+  // The same condition in two rows runs once.
+  const asked = new Map<string, Promise<Verdict>>();
 
   const ask = (condition: string) => {
     let p = asked.get(condition);

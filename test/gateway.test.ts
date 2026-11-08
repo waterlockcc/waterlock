@@ -9,7 +9,7 @@ import { gmail as gmailProvider } from "../src/providers/gmail/index.js";
 
 const REAL_TOKEN = "ya29.REAL-GOOGLE-TOKEN";
 const sessions = createSessions({
-  signingKey: "test-signing-key-0123456789abcdef", // gitleaks:allow (fixed test key)
+  signingKey: "test-signing-key-0123456789abcdef", // gitleaks:allow
 });
 let up: Awaited<ReturnType<typeof fakeUpstream>>;
 let upstream: SeenRequest[];
@@ -51,7 +51,10 @@ beforeEach(() => {
   upstream.length = 0;
 });
 
-/** The harness side: stock googleapis client. Only `auth` and `rootUrl` differ from normal use. */
+/**
+ * The harness side: stock googleapis client. Only `auth` and `rootUrl` differ
+ * from normal use.
+ */
 async function client(agent = "inbox-assistant") {
   const { token } = await sessions.mint({
     provider: "gmail",
@@ -233,7 +236,7 @@ describe("gateway with hostile raw requests", () => {
 
   it("expired token -> 401", async () => {
     const past = createSessions({
-      signingKey: "test-signing-key-0123456789abcdef", // gitleaks:allow (fixed test key)
+      signingKey: "test-signing-key-0123456789abcdef", // gitleaks:allow
       now: () => Date.now() - 3_600_000,
     });
     const { token } = await past.mint({

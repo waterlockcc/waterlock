@@ -9,7 +9,7 @@ import { linear } from "../src/providers/linear/index.js";
 const REAL_TOKEN = "lin_oauth_REAL-LINEAR-TOKEN";
 const TEAM = "team-agents";
 const sessions = createSessions({
-  signingKey: "test-signing-key-0123456789abcdef", // gitleaks:allow (fixed test key)
+  signingKey: "test-signing-key-0123456789abcdef", // gitleaks:allow
 });
 let up: Awaited<ReturnType<typeof fakeUpstream>>;
 let upstream: SeenRequest[];
@@ -72,7 +72,10 @@ beforeEach(() => {
   upstream.length = 0;
 });
 
-/** The harness side: stock Linear SDK. Only `apiUrl` and the token differ from normal use. */
+/**
+ * The harness side: stock Linear SDK. Only `apiUrl` and the token differ from
+ * normal use.
+ */
 async function client(url = base) {
   const { token } = await sessions.mint({
     provider: "linear",
