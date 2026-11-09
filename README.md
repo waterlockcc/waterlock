@@ -22,3 +22,11 @@ really broad permissions. What waterlock gives you
 ## Guide
 
 Install and usage: [wiki](https://github.com/waterlockcc/waterlock/wiki).
+
+## Bug reports
+
+Please raise issues on this repo for any bugs you find. Using AI is absolutely fine for them, just vet it yourself before raising it, please.
+
+## New Feature/Provider Requests
+
+If there are new providers or features that you would like to see, please raise an issue for them on the repo. I'll try to take it up on priority.
