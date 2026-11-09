@@ -1,9 +1,7 @@
 # waterlock
 
 Open source solution to [workos airlock](https://workos.com/blog/workos-airlock).
-
-** This repo is a work in progress. Not ready for production usage. If you would like to contribute, 
-please raise an issue and we can chat **
+Currently in beta.
 
 ## Why use this?
 
