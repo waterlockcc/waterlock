@@ -1,9 +1,7 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
-  <img src="assets/logo.svg" alt="waterlock" width="72">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/lockup-dark.svg">
+  <img src="assets/lockup.svg" alt="waterlock" width="280">
 </picture>
-
-# waterlock
 
 Open source solution to [workos airlock](https://workos.com/blog/workos-airlock).
 Currently in beta.

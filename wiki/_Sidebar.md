@@ -1,6 +1,6 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/waterlockcc/waterlock/blob/main/assets/logo-dark.svg?raw=true">
-  <img src="https://github.com/waterlockcc/waterlock/blob/main/assets/logo.svg?raw=true" alt="waterlock" width="40">
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/waterlockcc/waterlock/blob/main/assets/lockup-dark.svg?raw=true">
+  <img src="https://github.com/waterlockcc/waterlock/blob/main/assets/lockup.svg?raw=true" alt="waterlock" width="160">
 </picture>
 
 **Getting started**
