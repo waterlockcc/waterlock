@@ -5,6 +5,10 @@ Open source solution to [workos airlock](https://workos.com/blog/workos-airlock)
 ** This repo is a work in progress. Not ready for production usage. If you would like to contribute, 
 please raise an issue and we can chat **
 
+![An AI SDK agent works on a real Linear workspace through the waterlock gateway](https://github.com/waterlockcc/waterlock/blob/main/assets/demo.gif?raw=true)
+
+An AI SDK agent on a real Linear workspace, through the gateway. Creating the issue and setting its priority are allowed. Moving it to another team is blocked by a TypeScript rule. Filing a refund with a card number is blocked by a plain-language check. Linear is queried before and after the run. [Full video (mp4)](https://github.com/waterlockcc/waterlock/blob/main/assets/demo.mp4).
+
 ## Why use this?
 
 You don't want to inject real creds into your agents since most of the applications have

@@ -17,3 +17,5 @@ new LinearClient({ accessToken: token, apiUrl: "http://127.0.0.1:8787/graphql" }
 ```
 
 Runnable example against a fake Linear with seed data: [examples/ai-sdk-linear-triage](https://github.com/waterlockcc/waterlock/tree/main/examples/ai-sdk-linear-triage).
+
+Demo against a real Linear workspace (create allowed, team move and billing info blocked): [video](https://github.com/waterlockcc/waterlock/blob/main/assets/demo.mp4).
