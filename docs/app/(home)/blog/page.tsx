@@ -15,7 +15,7 @@ export default function BlogPage() {
     <>
       <section className={heroBand}>
         <div className={`${container} grid grid-cols-1 gap-10 pt-14 pb-20 sm:pt-20 sm:pb-28 lg:grid-cols-2 lg:items-end`}>
-          <h1 className="display text-[44px] leading-[48px] sm:text-6xl sm:leading-[64px]">Notes from the gateway</h1>
+          <h1 className="brand-display text-[48px] leading-[50px] sm:text-[68px] sm:leading-[68px]">notes from the gateway</h1>
           <div>
             <p className="label opacity-80">Blog</p>
             <p className="mt-4 max-w-xl text-lg leading-6 font-medium">{intro}</p>

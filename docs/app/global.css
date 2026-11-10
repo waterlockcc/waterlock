@@ -65,6 +65,14 @@
 
 html {
   scrollbar-gutter: stable;
+  /* What shows when the page is dragged past either end (overscroll):
+     teal, like the header above and the footer below. The body paints
+     the paper colour over everything in between. */
+  background-color: var(--wl-band);
+  /* Same dot grid as the bands, pinned to the viewport so it lines up. */
+  background-image: radial-gradient(rgb(255 255 255 / 0.35) 1px, transparent 1.2px);
+  background-size: 16px 16px;
+  background-attachment: fixed;
 }
 
 html > body[data-scroll-locked] {
@@ -90,6 +98,15 @@ html > body[data-scroll-locked] {
     text-wrap: balance;
   }
 
+  /* Brand headlines: Space Grotesk, lowercase, like the wordmark. Post
+     titles keep Plex and their own case. */
+  .brand-display {
+    font-family: var(--font-grotesk), var(--font-sans);
+    font-weight: 500;
+    letter-spacing: -0.045em;
+    text-wrap: balance;
+  }
+
   /* Dot grid on bands and placeholder covers. */
   .dots {
     background-image: radial-gradient(
@@ -104,14 +121,28 @@ html > body[data-scroll-locked] {
     background-attachment: fixed;
   }
 
+  /* A screen-tall strip above the header with the same teal and dots.
+     Pulling the page down past the top (overscroll) reveals this instead
+     of the root background, which Safari paints as a flat colour. It sits
+     above the document, so it adds no scroll height. */
+  .site-header::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    bottom: 100%;
+    height: 100vh;
+    background: inherit;
+  }
+
   /* Hero bands: a large faint mark on the right, over the dot grid. The
      dots stay pinned to the viewport so they line up with the header's. */
   .hero-band {
     background-image:
       url('/watermark.svg'),
       radial-gradient(color-mix(in srgb, currentColor 35%, transparent) 1px, transparent 1.2px);
-    background-size: 460px 460px, 16px 16px;
-    background-position: right 4% center, 0 0;
+    /* Larger than the hero and pushed past the right edge, so it crops. */
+    background-size: 680px 680px, 16px 16px;
+    background-position: right -240px top -40px, 0 0;
     background-repeat: no-repeat, repeat;
     background-attachment: scroll, fixed;
   }
@@ -124,8 +155,8 @@ html > body[data-scroll-locked] {
   /* Narrow screens: smaller, tucked into the corner, away from the text. */
   @media (max-width: 640px) {
     .hero-band {
-      background-size: 280px 280px, 16px 16px;
-      background-position: right -80px bottom -60px, 0 0;
+      background-size: 360px 360px, 16px 16px;
+      background-position: right -140px bottom -100px, 0 0;
     }
     .watermark {
       background-size: 360px 360px;

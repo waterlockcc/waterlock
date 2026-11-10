@@ -10,7 +10,7 @@ import { band, button, container, iconButton, Mark } from './ui';
 
 export function SiteHeader() {
   return (
-    <header className={`sticky top-0 z-40 border-b border-band-line/40 ${band}`}>
+    <header className={`site-header sticky top-0 z-40 ${band}`}>
       <nav className={`${container} flex h-16 items-center gap-2 sm:h-20`}>
         <Link href={links.blog} className="pressable me-auto flex shrink-0 items-center gap-3" aria-label="waterlock blog">
           <Mark className="size-8 shrink-0" />

@@ -35,7 +35,7 @@ export function SiteFooter() {
       {/* CTA, with the mark on the left (the hero has it on the right) */}
       <div className="watermark">
         <div className={`${container} flex flex-col items-center gap-4 py-24 text-center sm:py-32`}>
-          <h2 className="display text-4xl sm:text-5xl">Keep the keys out of the agent</h2>
+          <h2 className="brand-display text-4xl sm:text-[56px] sm:leading-[60px]">keep the keys out of the agent</h2>
           <p className="max-w-xl text-lg font-medium">
             Open source, MIT licensed. Rules in TypeScript, checks in plain language.
           </p>
