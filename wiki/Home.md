@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/waterlockcc/waterlock/blob/main/assets/logo-dark.svg?raw=true">
+  <img src="https://github.com/waterlockcc/waterlock/blob/main/assets/logo.svg?raw=true" alt="waterlock" width="72">
+</picture>
+
 # waterlock
 
 Open source solution to [workos airlock](https://workos.com/blog/workos-airlock).
