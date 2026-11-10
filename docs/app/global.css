@@ -214,6 +214,8 @@ html > body[data-scroll-locked] {
   text-underline-offset: 4px;
 }
 .post-body :not(pre) > code {
+  /* Long package paths would otherwise widen the page on phones. */
+  overflow-wrap: anywhere;
   font-size: 0.8em;
   font-weight: 500;
   background: var(--wl-tint);
@@ -280,6 +282,19 @@ html > body[data-scroll-locked] {
   border-color: var(--wl-ink);
   font-size: 14px;
 }
+/* Changelog: the BREAKING CHANGE heading stands out, so nobody upgrades
+   past it unawares. */
+.post-body h3[id^='breaking-change'] {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  background: var(--wl-ink);
+  color: var(--wl-paper);
+  padding: 6px 8px;
+}
+
 /* Package-manager tabs (```npm blocks): square frame, mono tabs, a teal
    underline on the picked one, like the open page in the sidebar. */
 .post-body div:has(> [role='tablist']) {

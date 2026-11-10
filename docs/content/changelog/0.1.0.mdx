@@ -1,0 +1,18 @@
+---
+title: "First release"
+version: "0.1.0"
+date: 2026-11-07
+summary: "The policy gateway, with a Gmail provider."
+---
+
+### Added
+
+- **The gateway.** Agents call APIs through it with a session token; it holds the real credential, checks each call against your policy, and forwards it. ([#1](https://github.com/waterlockcc/waterlock/pull/1))
+- **Policies** of TypeScript rows, default deny, typed per action.
+- **Checks**: plain-language deny rows answered by a model you call, with helpers in `@waterlock/gateway/checks`.
+- **Sessions**: signed, short-lived tokens with `createSessions`, and an optional store for the human's messages (`memoryStore`).
+- **Credentials**: `staticToken` and `oauth2Refresh`.
+- **Gmail provider**, `@waterlock/gateway/providers/gmail`, generated from Google's Discovery document, with recipients, subject and body decoded into `r.context` for sends and drafts.
+- **Codegen**, `@waterlock/gateway/codegen`, to generate providers from Discovery and OpenAPI specs.
+
+[All changes in v0.1.0](https://github.com/waterlockcc/waterlock/commits/v0.1.0)

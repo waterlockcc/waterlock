@@ -23,6 +23,10 @@ export function SiteHeader() {
         <div className="ms-3 me-auto flex items-center gap-4 sm:ms-8 sm:gap-6">
           <Section href={links.blog}>Blog</Section>
           <Section href={links.docs}>Docs</Section>
+          {/* Phones: in the footer instead, so the nav fits on one line. */}
+          <span className="max-sm:hidden">
+            <Section href={links.changelog}>Changelog</Section>
+          </span>
         </div>
         <SearchIcon />
         <a href={links.npm} className={`${iconButton} max-sm:hidden`} aria-label="npm" title="npm">

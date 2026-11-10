@@ -1,0 +1,25 @@
+---
+title: "GraphQL, and a Linear provider"
+version: "0.2.0"
+date: 2026-11-08
+summary: "GraphQL requests become actions like REST calls do, and Linear is the first GraphQL provider."
+---
+
+### Added
+
+- **GraphQL support.** Requests to a provider's GraphQL endpoint are matched on the body: the top-level field is the action and its arguments, with variables resolved, are `r.params`. ([#6](https://github.com/waterlockcc/waterlock/pull/6))
+
+  ```ts
+  { when: (r) => r.action === "linear.mutation.issueCreate" && r.params.input.teamId === TEAM_ID }
+  ```
+
+- **Linear provider**, `@waterlock/gateway/providers/linear`, generated from Linear's schema. `auth: "apiKey"` for personal API keys.
+- `@waterlock/gateway/graphql` with `createGraphqlMatcher`, for GraphQL providers of your own, and GraphQL schemas as a codegen input.
+- Denials on a GraphQL endpoint use GraphQL's error shape, so GraphQL clients show the reason.
+
+### Changed
+
+- A provider can be GraphQL-only: its REST operation table is now optional.
+- One operation and one top-level field per GraphQL request. Batches, subscriptions, persisted queries and introspection are rejected. See the [GraphQL limitation](/docs/concepts/actions#graphql-limitation).
+
+[Compare v0.1.1...v0.2.0](https://github.com/waterlockcc/waterlock/compare/v0.1.1...v0.2.0)

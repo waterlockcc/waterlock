@@ -87,3 +87,27 @@ export const docs = loader({
   // the sidebar.
   icon: (icon) => (isProvider(icon) ? createElement(ProviderIcon, { id: icon, className: 'size-4 shrink-0' }) : undefined),
 });
+
+// Changelog: one file per release in content/changelog (`0.2.0.mdx`),
+// written at release time. See .claude/skills/update-changelog.
+const releases = defineCollections({
+  type: 'doc',
+  dir: 'content/changelog',
+  mdxOptions: applyMdxPreset({
+    rehypeCodeOptions: { themes: { light: 'min-light', dark: 'min-dark' } },
+  }),
+  schema: pageSchema.extend({
+    version: z.string(),
+    summary: z.string(),
+    date: z.coerce.date().transform((d) => d.toISOString().slice(0, 10)),
+  }),
+});
+
+export type Release = (typeof releases.entries)[number];
+
+/** Newest version first. */
+export function getReleases(): Release[] {
+  return [...releases.entries].sort((a, b) =>
+    b.version.localeCompare(a.version, undefined, { numeric: true }),
+  );
+}

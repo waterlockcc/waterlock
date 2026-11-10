@@ -8,4 +8,7 @@ pnpm dev     # http://localhost:3000/blog and /docs; add ?data=worst on /blog to
 pnpm build   # static site in out/
 ```
 
-Before bumping the gateway's version for a release, `pnpm docs:snapshot` freezes the current docs at `/docs/vX.Y`; `/docs` stays the latest.
+Before bumping the gateway's version for a release:
+
+1. `pnpm docs:snapshot` freezes the current docs at `/docs/vX.Y`; `/docs` stays the latest.
+2. Add `content/changelog/<version>.mdx` (the `update-changelog` skill in `.claude/skills` has the rules).

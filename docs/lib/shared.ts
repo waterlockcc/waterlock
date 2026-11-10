@@ -6,6 +6,7 @@ const repo = 'https://github.com/waterlockcc/waterlock';
 export const links = {
   blog: blogRoute,
   docs: docsRoute,
+  changelog: '/changelog',
   github: repo,
   quickstart: `${docsRoute}/getting-started#quickstart`,
   policies: `${docsRoute}/concepts/policies`,

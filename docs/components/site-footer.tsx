@@ -9,6 +9,7 @@ const columns = [
     items: [
       ['GitHub', links.github],
       ['npm', links.npm],
+      ['Changelog', links.changelog],
       ['Releases', links.releases],
     ],
   },
