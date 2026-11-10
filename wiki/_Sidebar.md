@@ -1,4 +1,7 @@
-<img src="https://github.com/waterlockcc/waterlock/blob/main/assets/icon.svg?raw=true" alt="waterlock" width="40">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/waterlockcc/waterlock/blob/main/assets/lockup-dark.svg?raw=true">
+  <img src="https://github.com/waterlockcc/waterlock/blob/main/assets/lockup.svg?raw=true" alt="waterlock" width="160">
+</picture>
 
 **Getting started**
 - [Install](Install)
