@@ -1,0 +1,62 @@
+---
+title: Your agent shouldn't hold your Linear key
+description: A triage agent needs to file and update issues. Its API key can also delete every issue in the workspace. Here is how waterlock keeps the key out of the agent and the rules in your code.
+author: Prashant Raj
+category: Product
+art: exploded
+date: 2026-11-11
+---
+
+A Linear API key can do anything you can do: create issues, move them between teams, delete them. Give one to an agent that only needs to file and prioritise issues, and a single bad prompt can use the rest of that power.
+
+[waterlock](https://github.com/waterlockcc/waterlock) is a gateway that sits between the agent and the API. The agent gets a short-lived session token. The gateway holds the real key, checks each call against your rules, and only then forwards it.
+
+![An AI SDK agent works on a real Linear workspace through the waterlock gateway](/demo.gif)
+
+## The rules are code
+
+Rules are plain TypeScript, typed from the provider. Anything not allowed is denied.
+
+```ts
+policy: [
+  { when: (r) => r.action.startsWith('linear.query.') },
+  { when: (r) => r.action === 'linear.mutation.issueCreate' },
+  { when: (r) => r.action === 'linear.mutation.issueUpdate' },
+  {
+    when: (r) =>
+      r.action === 'linear.mutation.issueUpdate' &&
+      r.params.input.teamId !== undefined &&
+      r.params.input.teamId !== AGENTS_TEAM,
+    action: 'deny',
+    reason: "Issues can't be moved to another team.",
+  },
+  {
+    when: 'The issue contains billing or payment information of any kind',
+    action: 'deny',
+    reason: 'No billing information in issues.',
+  },
+],
+```
+
+The last rule is a plain-language check, answered by a model you choose. Checks can only deny, so a confused model can't open anything up.
+
+## The agent barely changes
+
+The agent uses the stock Linear SDK. Two lines differ: the session token replaces the key, and the gateway URL replaces `api.linear.app`.
+
+```ts
+const linear = new LinearClient({
+  accessToken: await readFile('.session', 'utf8'),
+  apiUrl: 'http://localhost:8787/graphql',
+});
+```
+
+In the demo, the agent is asked to file an issue, raise its priority, file a refund with a card number, and move the issue to another team. The first two go through. The team move is blocked by the TypeScript rule, the refund by the check, and Linear is queried before and after to show nothing else changed.
+
+## Try it
+
+```sh
+npm i @waterlock/gateway
+```
+
+Setup and the full rule reference are in the [wiki](https://github.com/waterlockcc/waterlock/wiki).
