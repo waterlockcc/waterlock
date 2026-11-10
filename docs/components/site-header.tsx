@@ -1,7 +1,10 @@
 'use client';
-import { BookOpen, Moon, Sun } from 'lucide-react';
+import { clsx } from 'clsx';
+import { useSearchContext } from 'fumadocs-ui/contexts/search';
+import { Moon, Search, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { links } from '@/lib/shared';
 import { GitHubIcon, NpmIcon } from './brand-icons';
@@ -12,15 +15,17 @@ export function SiteHeader() {
   return (
     <header className={`site-header sticky top-0 z-40 ${band}`}>
       <nav className={`${container} flex h-16 items-center gap-2 sm:h-20`}>
-        <Link href={links.blog} className="pressable me-auto flex shrink-0 items-center gap-3" aria-label="waterlock blog">
+        <Link href={links.blog} className="pressable flex shrink-0 items-center gap-3" aria-label="waterlock blog">
           <Mark className="size-8 shrink-0" />
-          {/* Below 420px the mark alone, so the nav fits on one line. */}
-          <span className="display hidden text-2xl min-[420px]:inline">waterlock</span>
+          {/* Wide screens only, so the nav fits on one line. */}
+          <span className="display hidden text-2xl md:inline">waterlock</span>
         </Link>
-        <a href={links.wiki} className={iconButton} aria-label="Wiki" title="Wiki">
-          <BookOpen className="size-4" aria-hidden />
-        </a>
-        <a href={links.npm} className={iconButton} aria-label="npm" title="npm">
+        <div className="ms-3 me-auto flex items-center gap-4 sm:ms-8 sm:gap-6">
+          <Section href={links.blog}>Blog</Section>
+          <Section href={links.docs}>Docs</Section>
+        </div>
+        <SearchIcon />
+        <a href={links.npm} className={`${iconButton} max-sm:hidden`} aria-label="npm" title="npm">
           <NpmIcon className="size-4" />
         </a>
         <a href={links.github} className={iconButton} aria-label="GitHub" title="GitHub">
@@ -33,6 +38,29 @@ export function SiteHeader() {
         </a>
       </nav>
     </header>
+  );
+}
+
+/** Blog / Docs. Underlined while you're in that section. */
+function Section({ href, children }: { href: string; children: string }) {
+  const here = usePathname().startsWith(href);
+  return (
+    <Link
+      href={href}
+      aria-current={here ? 'page' : undefined}
+      className={clsx('label underline-offset-[6px] hover:underline', here && 'underline decoration-2')}
+    >
+      {children}
+    </Link>
+  );
+}
+
+function SearchIcon() {
+  const { setOpenSearch } = useSearchContext();
+  return (
+    <button type="button" onClick={() => setOpenSearch(true)} className={iconButton} aria-label="Search docs" title="Search docs (⌘K)">
+      <Search className="size-4" aria-hidden />
+    </button>
   );
 }
 

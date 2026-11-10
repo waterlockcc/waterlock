@@ -15,7 +15,7 @@ const columns = [
   {
     title: 'Docs',
     items: [
-      ['Wiki', links.wiki],
+      ['Introduction', links.docs],
       ['Quickstart', links.quickstart],
       ['Policies', links.policies],
     ],

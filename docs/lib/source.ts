@@ -1,13 +1,32 @@
 import { loader } from 'fumadocs-core/source';
-import { pageSchema } from 'fumadocs-core/source/schema';
-import { defineCollections } from 'fumadocs-mdx/macro';
+import { metaSchema, pageSchema } from 'fumadocs-core/source/schema';
+import { applyMdxPreset } from 'fumadocs-mdx/config';
+import convert from 'npm-to-yarn';
+import { defineCollections, defineDocs } from 'fumadocs-mdx/macro';
+import { createElement } from 'react';
 import { z } from 'zod';
-import { blogRoute } from './shared';
+import { isProvider, ProviderIcon } from '@/components/provider-icons';
+import { blogRoute, docsRoute } from './shared';
 
 // One MDX file per post in content/blog. The file name is the URL slug.
 const posts = defineCollections({
   type: 'doc',
   dir: 'content/blog',
+  // Code blocks: Min, light and dark. A ```npm block becomes npm /
+  // pnpm / bun tabs, npm first (the default); the pick is saved in
+  // localStorage and shared by every block. Repeated per collection: the
+  // macro only sees package imports, not local constants.
+  mdxOptions: applyMdxPreset({
+    rehypeCodeOptions: { themes: { light: 'min-light', dark: 'min-dark' } },
+    remarkNpmOptions: {
+      persist: { id: 'package-manager' },
+      packageManagers: [
+        { name: 'npm', command: (cmd) => cmd },
+        { name: 'pnpm', command: (cmd) => cmd.split('\n').map((l) => convert(l, 'pnpm')).join('\n') },
+        { name: 'bun', command: (cmd) => cmd.split('\n').map((l) => convert(l, 'bun')).join('\n') },
+      ],
+    },
+  }),
   schema: pageSchema.extend({
     description: z.string(),
     author: z.string(),
@@ -36,3 +55,35 @@ export function getPosts(): Post[] {
     .getPages()
     .sort((a, b) => b.data.date.localeCompare(a.data.date));
 }
+
+// Docs: content/docs, ordered and grouped by the meta.json files there.
+const docsCollection = defineDocs({
+  dir: 'content/docs',
+  docs: {
+    schema: pageSchema,
+    // Code blocks: Min, light and dark. A ```npm block becomes npm /
+    // pnpm / bun tabs, npm first (the default); the pick is saved in
+    // localStorage and shared by every block. Repeated per collection: the
+    // macro only sees package imports, not local constants.
+    mdxOptions: applyMdxPreset({
+      rehypeCodeOptions: { themes: { light: 'min-light', dark: 'min-dark' } },
+      remarkNpmOptions: {
+        persist: { id: 'package-manager' },
+        packageManagers: [
+          { name: 'npm', command: (cmd) => cmd },
+          { name: 'pnpm', command: (cmd) => cmd.split('\n').map((l) => convert(l, 'pnpm')).join('\n') },
+          { name: 'bun', command: (cmd) => cmd.split('\n').map((l) => convert(l, 'bun')).join('\n') },
+        ],
+      },
+    }),
+  },
+  meta: { schema: metaSchema },
+});
+
+export const docs = loader({
+  baseUrl: docsRoute,
+  source: docsCollection.toFumadocsSource(),
+  // `icon: "gmail"` in a page's frontmatter shows that provider's mark in
+  // the sidebar.
+  icon: (icon) => (isProvider(icon) ? createElement(ProviderIcon, { id: icon, className: 'size-4 shrink-0' }) : undefined),
+});

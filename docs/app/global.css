@@ -221,14 +221,110 @@ html > body[data-scroll-locked] {
   border-radius: 4px;
   padding: 2px 5px;
 }
-.post-body img {
+.post-body :is(img, video) {
   border: 1px solid var(--wl-ink);
   border-radius: 0;
+}
+.post-body video {
+  width: 100%;
+  height: auto;
+  background: #000;
+}
+.post-body table {
+  border-radius: 0;
+  border-color: var(--wl-ink);
+}
+.post-body :is(th, td) {
+  border-color: var(--wl-ink);
+}
+/* Keyboard focus: a square teal ring (white on the teal bands, where teal
+   would vanish). Mouse clicks don't show it; :focus-visible only fires for
+   keyboard and similar. */
+@layer base {
+  /* In the base layer so a component can opt out (e.g. menu rows, which
+     show the keyboard row with a tint instead). */
+  :focus-visible {
+    outline: 2px solid var(--wl-brand);
+    outline-offset: 2px;
+  }
+  :is(.bg-band, .hero-band) :focus-visible {
+    outline-color: var(--wl-on-band);
+  }
+}
+
+/* The keyboard-selected row in search and menus: teal tint with a teal bar,
+   like the open page in the docs sidebar. */
+.search-square [aria-selected='true'] {
+  background-color: var(--wl-tint);
+  color: var(--wl-brand);
+  box-shadow: inset 2px 0 0 var(--wl-brand);
+}
+.search-square mark,
+.search-square [aria-selected='true'] mark {
+  background: none;
+  color: var(--wl-brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Docs search dialog: square, like everything else. */
+.search-square,
+.search-square * {
+  border-radius: 0 !important;
+}
+.search-square {
+  border: 1px solid var(--wl-ink);
 }
 .post-body figure.shiki {
   border-radius: 0;
   border-color: var(--wl-ink);
   font-size: 14px;
+}
+/* Package-manager tabs (```npm blocks): square frame, mono tabs, a teal
+   underline on the picked one, like the open page in the sidebar. */
+.post-body div:has(> [role='tablist']) {
+  border-radius: 0;
+  border-color: var(--wl-ink);
+  overflow: hidden;
+}
+.post-body [role='tablist'] {
+  border-bottom: 1px solid var(--wl-ink);
+  padding-inline: 0;
+  gap: 0;
+}
+.post-body [role='tab'] {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 10px 14px;
+  border-right: 1px solid var(--wl-line);
+  color: color-mix(in srgb, var(--wl-ink) 65%, transparent);
+}
+.post-body [role='tab']:hover {
+  color: var(--wl-ink);
+  background: color-mix(in srgb, var(--wl-tint) 50%, transparent);
+}
+.post-body [role='tab'][aria-selected='true'] {
+  color: var(--wl-brand);
+}
+.post-body [role='tab'] > div {
+  inset-inline: 0;
+  height: 2px;
+}
+.post-body [role='tabpanel'] figure.shiki {
+  border: 0;
+  margin: 0;
+}
+
+/* Paint the code theme's own background instead of fumadocs' card
+   colour. */
+.post-body figure.shiki {
+  background-color: var(--shiki-light-bg);
+}
+.dark .post-body figure.shiki {
+  background-color: var(--shiki-dark-bg);
 }
 
 @media (prefers-reduced-motion: reduce) {

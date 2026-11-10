@@ -2,13 +2,17 @@
 import { Check, Copy } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { installCommand } from '@/lib/shared';
+import { installCommands, usePackageManager } from '@/lib/package-manager';
 import { Dither } from './dither';
 import { button, type ButtonProps } from './ui';
 
-/** A button showing the install command; click copies it. */
+/**
+ * A button showing the install command for the reader's package manager
+ * (npm until they pick another on a code-block tab); click copies it.
+ */
 export function CopyCommand({ intent = 'inverse', size }: ButtonProps) {
   const [copied, setCopied] = useState(false);
+  const installCommand = installCommands[usePackageManager()];
 
   async function copy() {
     try {

@@ -1,14 +1,14 @@
 export const appName = 'waterlock';
 export const blogRoute = '/blog';
-export const installCommand = 'npm i @waterlock/gateway';
+export const docsRoute = '/docs';
 
 const repo = 'https://github.com/waterlockcc/waterlock';
 export const links = {
   blog: blogRoute,
+  docs: docsRoute,
   github: repo,
-  wiki: `${repo}/wiki`,
-  quickstart: `${repo}/wiki/Quickstart`,
-  policies: `${repo}/wiki/Policies`,
+  quickstart: `${docsRoute}/getting-started#quickstart`,
+  policies: `${docsRoute}/concepts/policies`,
   issues: `${repo}/issues`,
   releases: `${repo}/releases`,
   npm: 'https://www.npmjs.com/package/@waterlock/gateway',

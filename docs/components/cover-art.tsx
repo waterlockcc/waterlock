@@ -8,13 +8,13 @@ const H = 900;
 
 // The mark on a 256 grid, whole and as its four parts: the rounded frame,
 // the centre pillar, and the two blocks either side of it.
-const OUTER =
+export const OUTER =
   'M72 16 H184 A56 56 0 0 1 240 72 V184 A56 56 0 0 1 184 240 H72 A56 56 0 0 1 16 184 V72 A56 56 0 0 1 72 16 Z';
 const HOLE =
   'M72 40 A32 32 0 0 0 40 72 V172 H102 V216 H116 V72 H140 V216 H154 V108 H216 V72 A32 32 0 0 0 184 40 Z';
 const INNER =
   'M72 40 A32 32 0 0 0 40 72 V184 A32 32 0 0 0 72 216 H184 A32 32 0 0 0 216 184 V72 A32 32 0 0 0 184 40 Z';
-const MARK = `${OUTER} ${HOLE}`;
+export const MARK = `${OUTER} ${HOLE}`;
 const PARTS = {
   frame: `${OUTER} ${INNER}`,
   left: 'M40 172 H102 V216 H72 A32 32 0 0 1 40 184 Z',
@@ -22,7 +22,7 @@ const PARTS = {
   right: 'M154 108 H216 V184 A32 32 0 0 1 184 216 H154 Z',
 };
 
-const c = {
+export const c = {
   light: 'var(--art-light)',
   mid: 'var(--art-mid)',
   deep: 'var(--art-deep)',
@@ -59,7 +59,7 @@ type ShapeProps = {
 };
 
 /** A path on the 256 grid, placed at (x, y), `size` wide, quarter-turned. */
-function Shape({ d = MARK, x, y, size, turn = 0, fill, outline, shadow }: ShapeProps) {
+export function Shape({ d = MARK, x, y, size, turn = 0, fill, outline, shadow }: ShapeProps) {
   const s = size / 256;
   const at = (dx: number) =>
     `translate(${x + dx} ${y + dx}) scale(${s}) rotate(${turn * 90} 128 128)`;

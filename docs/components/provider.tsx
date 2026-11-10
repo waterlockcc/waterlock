@@ -1,12 +1,13 @@
 'use client';
 import { RootProvider } from 'fumadocs-ui/provider/next';
+import DocsSearch from './search';
 import { useTheme } from 'next-themes';
 import { type ReactNode } from 'react';
 import { Toaster } from 'sonner';
 
 export function Provider({ children }: { children: ReactNode }) {
   return (
-    <RootProvider search={{ enabled: false }}>
+    <RootProvider search={{ SearchDialog: DocsSearch }}>
       {children}
       <Toasts />
     </RootProvider>
