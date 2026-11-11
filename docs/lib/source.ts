@@ -37,8 +37,10 @@ const posts = defineCollections({
     // the style; `image` (a file in public/) replaces the art entirely.
     art: z.enum(['exploded', 'stack', 'tiles', 'lock']).optional(),
     image: z.string().optional(),
-    // YAML reads an unquoted 2026-11-11 as a Date; keep it as a string.
-    date: z.coerce.date().transform((d) => d.toISOString().slice(0, 10)),
+    // A day (2026-11-11) or a UTC time (2026-11-11T15:00:00Z) when two
+    // posts share a day; the time only orders them, pages show the day.
+    // YAML reads either unquoted as a Date; keep it as an ISO string.
+    date: z.coerce.date().transform((d) => d.toISOString()),
   }),
 });
 
