@@ -1,0 +1,20 @@
+---
+title: Why permissions suck today
+description: "Most products don't offer permissions as fine-grained as agents need, and every product describes them in its own language. Learn once, use everywhere."
+author: nikoz99
+category: Engineering
+art: tiles
+date: 2026-11-11T15:00:00Z
+---
+
+Most products today don't have the fine-grained permissions we need. Even when they claim to, they don't go down to the level we want. Worse, every product has its own language for them, when all of these products are just making REST API calls over the network.
+
+Take GitHub's fine-grained tokens. You can't draw a boundary around a single resource. Say you only want a token that can dispatch workflows, any workflow except the production deploy. You can't create that token. And even if you could, keeping that level of detail up to date for every product you use would be a nightmare.
+
+Before AI this wasn't much of a problem. You deployed some services, you onboarded some developers you trusted to a certain level, and coarse permissions worked. Today, every agent you run is one attack away from leaking its credentials or doing something you didn't want.
+
+## Learn once, use everywhere
+
+What I think should happen: each product keeps a simple language for the actions it allows, and gives you every parameter that action is going to use. You write simple rules your agents must obey. When you add another tool, it follows the same pattern, so there's nothing new to learn.
+
+That is the goal of [waterlock](/docs). It gives you one language for every provider. You bring your integrations and your AI toolkit (the AI SDK, Codex, Claude and so on) when you build your agents.

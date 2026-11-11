@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { CopyLink } from '@/components/copy-link';
+import { CoverArt } from '@/components/cover-art';
 import { getMDXComponents } from '@/components/mdx';
-import { TryPanel } from '@/components/try-panel';
-import { container, heroBand } from '@/components/ui';
+import { container } from '@/components/ui';
 import { formatDate } from '@/lib/format';
 import { pageMetadata } from '@/lib/seo';
 import { blog } from '@/lib/source';
@@ -12,21 +12,34 @@ export default async function Post(props: PageProps<'/blog/[slug]'>) {
   const { slug } = await props.params;
   const post = blog.getPage([slug]);
   if (!post) notFound();
-  const { title, description, author, category, date, body: Body } = post.data;
+  const { title, description, author, category, date, art, image, body: Body } = post.data;
 
+  // One column: the hero and the body share a reading-width column.
+  const column = 'mx-auto w-full max-w-[640px]';
   return (
     <>
-      <section className={heroBand}>
-        <div className={`${container} grid grid-cols-1 gap-10 pt-14 pb-20 sm:pt-20 sm:pb-28 lg:grid-cols-2 lg:items-end`}>
-          <h1 dir="auto" className="display text-[40px] leading-[46px] [overflow-wrap:anywhere] sm:text-5xl sm:leading-[56px]">
-            {title}
-          </h1>
-          <div>
+      {/* The card's cover fills the hero, in teal (the band's colours, in
+          both themes), faded into the band under the text. */}
+      <section className="post-hero relative isolate overflow-hidden bg-band text-on-band">
+        <div aria-hidden className="absolute inset-0 -z-10">
+          {image ? (
+            <img src={image} alt="" className="size-full object-cover" />
+          ) : (
+            <div className="dots size-full">
+              <CoverArt seed={post.url} style={art} />
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-band from-25% via-band/85 via-55% to-band/10" />
+        </div>
+        <div className={`${container} pt-40 pb-16 sm:pt-64 sm:pb-20`}>
+          <div className={column}>
             <p className="label opacity-80">
               {category} · <time dateTime={date}>{formatDate(date)}</time>
             </p>
-            <p className="mt-4 max-w-xl text-lg leading-6 font-medium">{description}</p>
-            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
+            <h1 dir="auto" className="display mt-6 text-[40px] leading-[46px] [overflow-wrap:anywhere] sm:text-[56px] sm:leading-[62px]">
+              {title}
+            </h1>
+            <div className="mt-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
               <span className="flex items-center gap-3">
                 <Initials name={author} />
                 <span dir="auto" className="text-lg font-medium">
@@ -39,18 +52,17 @@ export default async function Post(props: PageProps<'/blog/[slug]'>) {
         </div>
       </section>
 
-      <div className={`${container} grid grid-cols-1 gap-14 py-16 sm:py-24 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] lg:gap-[100px]`}>
-        <div className="order-last lg:order-first">
-          <div className="lg:sticky lg:top-32">
-            <TryPanel>
-              <p className="display text-2xl">TL;DR</p>
-              <p className="mt-3">{description}</p>
-            </TryPanel>
-          </div>
+      <div className={`${container} py-16 sm:py-20`}>
+        <div className={`${column} flex flex-col gap-12`}>
+          {/* Install lives in the closing call to action, after the post. */}
+          <aside className="border border-ink p-6 sm:p-8">
+            <p className="display text-2xl">TL;DR</p>
+            <p className="mt-3">{description}</p>
+          </aside>
+          <article className="post-body prose min-w-0 max-w-none">
+            <Body components={getMDXComponents()} />
+          </article>
         </div>
-        <article className="post-body prose min-w-0 max-w-none">
-          <Body components={getMDXComponents()} />
-        </article>
       </div>
     </>
   );

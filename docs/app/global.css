@@ -24,6 +24,16 @@
   --art-ink: #202020;
   --art-hi: #f5f5f5;
 }
+/* Cover art filling a post's hero: drawn in the band's teal in both
+   themes, so the white title reads over it. */
+.post-hero {
+  --art-bg: var(--wl-band);
+  --art-light: #2a7680;
+  --art-mid: #4fa3ad;
+  --art-deep: #0f4249;
+  --art-ink: #0b1718;
+  --art-hi: #d3ecef;
+}
 .dark {
   --art-bg: #102325;
   --art-light: #1a4044;
