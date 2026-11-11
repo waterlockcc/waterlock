@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation';
 import { CopyLink } from '@/components/copy-link';
 import { CoverArt } from '@/components/cover-art';
 import { getMDXComponents } from '@/components/mdx';
-import { TryPanel } from '@/components/try-panel';
 import { container } from '@/components/ui';
 import { formatDate } from '@/lib/format';
 import { pageMetadata } from '@/lib/seo';
@@ -55,10 +54,11 @@ export default async function Post(props: PageProps<'/blog/[slug]'>) {
 
       <div className={`${container} py-16 sm:py-20`}>
         <div className={`${column} flex flex-col gap-12`}>
-          <TryPanel>
+          {/* Install lives in the closing call to action, after the post. */}
+          <aside className="border border-ink p-6 sm:p-8">
             <p className="display text-2xl">TL;DR</p>
             <p className="mt-3">{description}</p>
-          </TryPanel>
+          </aside>
           <article className="post-body prose min-w-0 max-w-none">
             <Body components={getMDXComponents()} />
           </article>
