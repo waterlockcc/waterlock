@@ -10,6 +10,7 @@ import { getMDXComponents } from '@/components/mdx';
 import { isProvider } from '@/components/provider-icons';
 import { container, heroBand } from '@/components/ui';
 import { VersionSelect } from '@/components/version-select';
+import { pageMetadata } from '@/lib/seo';
 import { docs } from '@/lib/source';
 import { getVersions, versionOf, versionTree } from '@/lib/versions';
 
@@ -121,5 +122,5 @@ export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): P
   const { slug } = await props.params;
   const page = docs.getPage(slug);
   if (!page) notFound();
-  return { title: page.data.title, description: page.data.description };
+  return pageMetadata({ title: page.data.title, description: page.data.description, path: page.url });
 }

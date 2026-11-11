@@ -3,12 +3,13 @@ import { BlogIndex } from '@/components/blog-index';
 import { Dither } from '@/components/dither';
 import { button, container, heroBand } from '@/components/ui';
 import { getPostItems } from '@/lib/posts';
+import { pageMetadata } from '@/lib/seo';
 import { links } from '@/lib/shared';
 
 const intro =
   'How we keep AI agents away from real credentials, and what we learn building the gateway that does it.';
 
-export const metadata: Metadata = { title: 'Blog', description: intro };
+export const metadata: Metadata = pageMetadata({ title: 'Blog', description: intro, path: '/blog' });
 
 export default function BlogPage() {
   return (

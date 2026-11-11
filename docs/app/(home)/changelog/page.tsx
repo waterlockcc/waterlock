@@ -4,12 +4,13 @@ import { Dither } from '@/components/dither';
 import { getMDXComponents } from '@/components/mdx';
 import { button, container, heroBand } from '@/components/ui';
 import { formatDate } from '@/lib/format';
+import { pageMetadata } from '@/lib/seo';
 import { links } from '@/lib/shared';
 import { getReleases, type Release } from '@/lib/source';
 
 const intro = 'Every release of @waterlock/gateway: what was added, what changed, and how to move to it.';
 
-export const metadata: Metadata = { title: 'Changelog', description: intro };
+export const metadata: Metadata = pageMetadata({ title: 'Changelog', description: intro, path: '/changelog' });
 
 const releaseLink = 'pressable grid size-9 place-items-center border border-ink hover:bg-tint/50';
 

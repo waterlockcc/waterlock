@@ -13,7 +13,7 @@ You don't want to inject real creds into your agents since most of the applicati
 - Full visibility into what the accesses were like / audit logs (upcoming).
 - A gateway to proxy forward your external resource calls, preventing rogue agents from leaking your sensitive keys.
 - Static TypeScript functions that can work for validation.
-- Natural language for limiting what your agents can do. For example, if you are using Gmail, you can simply say "No billing info allowed in emails" and waterlock takes care of it.
+- Natural language for limiting what your agents can do. For example, with Gmail you can add the rule "No billing info allowed in emails", and a model you choose checks each call against it. These rules can only deny, never allow; see [Checks](/docs/concepts/checks).
 - You own the integration logic. With WorkOS, you are coupled to their infra. This is a more flexible approach to integration.
 - You own the AI layer: the AI SDK or Anthropic's SDK directly. Waterlock just works.
 

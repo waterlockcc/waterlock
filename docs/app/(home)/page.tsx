@@ -6,14 +6,28 @@ import { CopyCommand } from '@/components/copy-command';
 import { Dither } from '@/components/dither';
 import { ProviderIcon, type ProviderId } from '@/components/provider-icons';
 import { button, container, heroBand } from '@/components/ui';
-import { links } from '@/lib/shared';
+import { pageMetadata } from '@/lib/seo';
+import { links, siteUrl } from '@/lib/shared';
 
 const pitch =
   'Agents call your APIs through waterlock with a short-lived token. It holds the real keys, checks every call against rules you write, and forwards only what you allow.';
 
 export const metadata: Metadata = {
+  ...pageMetadata({ title: 'waterlock: a policy gateway for AI agents', description: pitch, path: '/' }),
   title: { absolute: 'waterlock: a policy gateway for AI agents' },
+};
+
+// Structured data: tells search engines this is an open-source library.
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareSourceCode',
+  name: 'waterlock',
   description: pitch,
+  url: siteUrl,
+  codeRepository: links.github,
+  programmingLanguage: 'TypeScript',
+  runtimePlatform: 'Node.js',
+  license: 'https://opensource.org/licenses/MIT',
 };
 
 const steps = [
@@ -62,10 +76,18 @@ export default async function Home() {
   const code = await highlight(rules, {
     lang: 'ts',
     themes: { light: 'min-light', dark: 'min-dark' },
+    // CSS variables only (no inline colours), so the dark theme applies in
+    // dark mode, as in the docs' code blocks.
+    defaultColor: false,
   });
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        // Our own constant object, serialised; no user input reaches it.
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+      />
       <section className={heroBand}>
         <div className={`${container} grid grid-cols-1 gap-10 pt-14 pb-20 sm:pt-24 sm:pb-32 lg:grid-cols-2 lg:items-end`}>
           <h1 className="brand-display text-[48px] leading-[50px] sm:text-[76px] sm:leading-[76px]">

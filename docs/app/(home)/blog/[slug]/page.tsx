@@ -5,6 +5,7 @@ import { getMDXComponents } from '@/components/mdx';
 import { TryPanel } from '@/components/try-panel';
 import { container, heroBand } from '@/components/ui';
 import { formatDate } from '@/lib/format';
+import { pageMetadata } from '@/lib/seo';
 import { blog } from '@/lib/source';
 
 export default async function Post(props: PageProps<'/blog/[slug]'>) {
@@ -76,5 +77,5 @@ export async function generateMetadata(props: PageProps<'/blog/[slug]'>): Promis
   const { slug } = await props.params;
   const post = blog.getPage([slug]);
   if (!post) notFound();
-  return { title: post.data.title, description: post.data.description };
+  return pageMetadata({ title: post.data.title, description: post.data.description, path: post.url, type: 'article' });
 }
