@@ -10,5 +10,9 @@
     // /blog serves blog.html; unknown paths get out/404.html with a 404.
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page"
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
   }
 }
