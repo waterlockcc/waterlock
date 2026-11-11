@@ -11,6 +11,7 @@ export const links = {
   quickstart: `${docsRoute}/getting-started#quickstart`,
   policies: `${docsRoute}/concepts/policies`,
   issues: `${repo}/issues`,
+  newIssue: `${repo}/issues/new`,
   releases: `${repo}/releases`,
   npm: 'https://www.npmjs.com/package/@waterlock/gateway',
 };

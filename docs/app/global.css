@@ -333,6 +333,22 @@ html > body[data-scroll-locked] {
   margin: 0;
 }
 
+/* Landing page code sample: same theme and frame as code in the docs. */
+.landing-code {
+  background-color: var(--shiki-light-bg, #fff);
+}
+.dark .landing-code {
+  background-color: var(--shiki-dark-bg, #1f1f1f);
+}
+.landing-code pre {
+  margin: 0;
+  padding: 20px;
+  background-color: var(--shiki-light-bg);
+}
+.dark .landing-code pre {
+  background-color: var(--shiki-dark-bg);
+}
+
 /* Paint the code theme's own background instead of fumadocs' card
    colour. */
 .post-body figure.shiki {

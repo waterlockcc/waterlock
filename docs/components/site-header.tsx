@@ -15,7 +15,7 @@ export function SiteHeader() {
   return (
     <header className={`site-header sticky top-0 z-40 ${band}`}>
       <nav className={`${container} flex h-16 items-center gap-2 sm:h-20`}>
-        <Link href={links.blog} className="pressable flex shrink-0 items-center gap-3" aria-label="waterlock blog">
+        <Link href="/" className="pressable flex shrink-0 items-center gap-3" aria-label="waterlock home">
           <Mark className="size-8 shrink-0" />
           {/* Wide screens only, so the nav fits on one line. */}
           <span className="display hidden text-2xl md:inline">waterlock</span>
