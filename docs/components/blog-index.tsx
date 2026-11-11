@@ -5,21 +5,17 @@ import { useState } from 'react';
 import { formatDate } from '@/lib/format';
 import type { PostItem } from '@/lib/post-item';
 import { Cover } from './cover';
-import { useDevData } from './dev-data';
 import { Dither } from './dither';
 import { button, Chip, container } from './ui';
 
 const PAGE = 9; // three rows of three
 
-export function BlogIndex({ posts: real }: { posts: PostItem[] }) {
-  // Real posts in production. In dev, ?data= swaps in a test fixture.
-  const { posts, toggle } = useDevData(real);
+export function BlogIndex({ posts }: { posts: PostItem[] }) {
   const [shown, setShown] = useState(PAGE);
   const [latest, ...rest] = posts;
 
   return (
     <section className={`${container} flex flex-col gap-6 py-16 sm:py-20`}>
-      {toggle}
       {!latest ? (
         <p className="py-8 text-lg">No posts yet.</p>
       ) : (

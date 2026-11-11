@@ -4,7 +4,7 @@ Blog and docs, on fumadocs (Next.js, static export). Blog posts are MDX in `cont
 
 ```sh
 pnpm i
-pnpm dev     # http://localhost:3000/blog and /docs; add ?data=worst on /blog to stress-test the cards
+pnpm dev     # http://localhost:3000
 pnpm build   # static site in out/
 ```
 
