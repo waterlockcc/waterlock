@@ -1,0 +1,40 @@
+name: Site
+
+# The site in docs/ (landing page, blog, docs, changelog) is a static Next.js
+# export, deployed by Cloudflare Pages' Git integration to https://waterlock.cc
+# (Pages project settings: root directory `docs`, build command `pnpm build`,
+# output directory `out`, NODE_VERSION 24). This workflow only checks that it
+# still builds, so a broken site fails the PR here too.
+on:
+  push:
+    branches: [main]
+    paths: [docs/**, package.json, .github/workflows/site.yml]
+  pull_request:
+    paths: [docs/**, package.json, .github/workflows/site.yml]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false # the build runs PR code; keep the token off disk
+      - uses: pnpm/action-setup@v4 # version from the root package.json "packageManager"
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: docs/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: docs
+      - run: pnpm types:check
+        working-directory: docs
+      - run: pnpm build
+        working-directory: docs

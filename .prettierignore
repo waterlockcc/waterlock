@@ -1,3 +1,6 @@
 # Codegen output: compared byte-for-byte with the generator in tests.
 src/providers/*/generated.ts
 dist
+
+# Blog app (fumadocs): its own style, not the library's.
+docs

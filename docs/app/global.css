@@ -1,0 +1,368 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+/* Brand: dotted teal bands, ink hairlines, square cards and buttons, Plex
+   type. The teal is the logo's (assets/logo.svg, assets/logo-dark.svg). */
+:root {
+  --wl-band: #1d6670; /* hero, header and CTA bands */
+  --wl-on-band: #ffffff;
+  /* Outlines on the band. Opaque, so the dot grid doesn't show through. */
+  --wl-band-line: #99babf;
+  --wl-brand: #1d6670; /* links, active filter */
+  --wl-ink: #202020;
+  --wl-paper: #f5f5f5;
+  --wl-line: rgb(32 32 32 / 0.16);
+  --wl-tint: #d3ecef; /* inline code */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+
+  /* Generated cover art (components/cover-art.tsx). */
+  --art-bg: #d3ecef;
+  --art-light: #a8d5da;
+  --art-mid: #4fa3ad;
+  --art-deep: #1d6670;
+  --art-ink: #202020;
+  --art-hi: #f5f5f5;
+}
+.dark {
+  --art-bg: #102325;
+  --art-light: #1a4044;
+  --art-mid: #2c7680;
+  --art-deep: #5fb5bf;
+  --art-ink: #e8e8e6;
+  --art-hi: #0b1718;
+  --wl-brand: #4fa3ad;
+  --wl-ink: #e8e8e6;
+  --wl-paper: #111414;
+  --wl-line: rgb(232 232 230 / 0.16);
+  --wl-tint: #1c3b3f;
+}
+
+@theme inline {
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --color-band: var(--wl-band);
+  --color-on-band: var(--wl-on-band);
+  --color-band-line: var(--wl-band-line);
+  --color-brand: var(--wl-brand);
+  --color-ink: var(--wl-ink);
+  --color-paper: var(--wl-paper);
+  --color-line: var(--wl-line);
+  --color-tint: var(--wl-tint);
+}
+
+/* Point fumadocs' own components (code blocks, prose) at the same palette. */
+:root,
+.dark {
+  --color-fd-background: var(--wl-paper);
+  --color-fd-foreground: var(--wl-ink);
+  --color-fd-primary: var(--wl-brand);
+  --color-fd-primary-foreground: #ffffff;
+  --color-fd-border: var(--wl-ink);
+  --color-fd-card: var(--wl-paper);
+  --color-fd-muted-foreground: color-mix(in srgb, var(--wl-ink) 70%, transparent);
+}
+
+html {
+  scrollbar-gutter: stable;
+  /* What shows when the page is dragged past either end (overscroll):
+     teal, like the header above and the footer below. The body paints
+     the paper colour over everything in between. */
+  background-color: var(--wl-band);
+  /* Same dot grid as the bands, pinned to the viewport so it lines up. */
+  background-image: radial-gradient(rgb(255 255 255 / 0.35) 1px, transparent 1.2px);
+  background-size: 16px 16px;
+  background-attachment: fixed;
+}
+
+html > body[data-scroll-locked] {
+  margin-right: 0px !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}
+
+@layer components {
+  /* Mono uppercase: nav, labels, buttons, filters. */
+  .label {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 16px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* Display type: Plex Sans pulled tight. */
+  .display {
+    font-weight: 500;
+    letter-spacing: -0.055em;
+    text-wrap: balance;
+  }
+
+  /* Brand headlines: Space Grotesk, lowercase, like the wordmark. Post
+     titles keep Plex and their own case. */
+  .brand-display {
+    font-family: var(--font-grotesk), var(--font-sans);
+    font-weight: 500;
+    letter-spacing: -0.045em;
+    text-wrap: balance;
+  }
+
+  /* Dot grid on bands and placeholder covers. */
+  .dots {
+    background-image: radial-gradient(
+      color-mix(in srgb, currentColor 35%, transparent) 1px,
+      transparent 1.2px
+    );
+    background-size: 16px 16px;
+  }
+  /* Pin the grid to the viewport so the sticky header's dots line up with
+     the hero's beneath it. */
+  .dots-fixed {
+    background-attachment: fixed;
+  }
+
+  /* A screen-tall strip above the header with the same teal and dots.
+     Pulling the page down past the top (overscroll) reveals this instead
+     of the root background, which Safari paints as a flat colour. It sits
+     above the document, so it adds no scroll height. */
+  .site-header::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    bottom: 100%;
+    height: 100vh;
+    background: inherit;
+  }
+
+  /* Hero bands: a large faint mark on the right, over the dot grid. The
+     dots stay pinned to the viewport so they line up with the header's. */
+  .hero-band {
+    background-image:
+      url('/watermark.svg'),
+      radial-gradient(color-mix(in srgb, currentColor 35%, transparent) 1px, transparent 1.2px);
+    /* Larger than the hero and pushed past the right edge, so it crops. */
+    background-size: 680px 680px, 16px 16px;
+    background-position: right -240px top -40px, 0 0;
+    background-repeat: no-repeat, repeat;
+    background-attachment: scroll, fixed;
+  }
+  /* The mark alone, for a block that already sits on a dotted band (the
+     footer's call to action). On the left, mirroring the hero's, and larger
+     than the block so the edges crop it. */
+  .watermark {
+    background: url('/watermark.svg') no-repeat left -160px center / 680px 680px;
+  }
+  /* Narrow screens: smaller, tucked into the corner, away from the text. */
+  @media (max-width: 640px) {
+    .hero-band {
+      background-size: 360px 360px, 16px 16px;
+      background-position: right -140px bottom -100px, 0 0;
+    }
+    .watermark {
+      background-size: 360px 360px;
+      background-position: left -140px bottom -100px;
+    }
+  }
+}
+
+/* Anything you click gives a little under the pointer. */
+.pressable {
+  transition:
+    transform 160ms var(--ease-out),
+    background-color 150ms ease,
+    color 150ms ease,
+    border-color 150ms ease;
+}
+.pressable:active {
+  transform: scale(0.97);
+}
+
+/* Covers lift their image a touch on hover (mouse only). */
+.cover img {
+  transition: transform 300ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .card:hover .cover img {
+    transform: scale(1.02);
+  }
+  .card:hover .card-title {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    text-decoration-thickness: 1px;
+  }
+}
+
+/* Post body. */
+.post-body {
+  font-size: 18px;
+  line-height: 28px;
+  color: var(--wl-ink);
+}
+.post-body :is(h2, h3) {
+  font-weight: 500;
+  letter-spacing: -0.05em;
+  color: var(--wl-ink);
+}
+.post-body h2 {
+  font-size: 28px;
+  line-height: 34px;
+}
+.post-body a {
+  color: inherit;
+  text-decoration-color: var(--wl-brand);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+.post-body :not(pre) > code {
+  /* Long package paths would otherwise widen the page on phones. */
+  overflow-wrap: anywhere;
+  font-size: 0.8em;
+  font-weight: 500;
+  background: var(--wl-tint);
+  border: 0;
+  border-radius: 4px;
+  padding: 2px 5px;
+}
+.post-body :is(img, video) {
+  border: 1px solid var(--wl-ink);
+  border-radius: 0;
+}
+.post-body video {
+  width: 100%;
+  height: auto;
+  background: #000;
+}
+.post-body table {
+  border-radius: 0;
+  border-color: var(--wl-ink);
+}
+.post-body :is(th, td) {
+  border-color: var(--wl-ink);
+}
+/* Keyboard focus: a square teal ring (white on the teal bands, where teal
+   would vanish). Mouse clicks don't show it; :focus-visible only fires for
+   keyboard and similar. */
+@layer base {
+  /* In the base layer so a component can opt out (e.g. menu rows, which
+     show the keyboard row with a tint instead). */
+  :focus-visible {
+    outline: 2px solid var(--wl-brand);
+    outline-offset: 2px;
+  }
+  :is(.bg-band, .hero-band) :focus-visible {
+    outline-color: var(--wl-on-band);
+  }
+}
+
+/* The keyboard-selected row in search and menus: teal tint with a teal bar,
+   like the open page in the docs sidebar. */
+.search-square [aria-selected='true'] {
+  background-color: var(--wl-tint);
+  color: var(--wl-brand);
+  box-shadow: inset 2px 0 0 var(--wl-brand);
+}
+.search-square mark,
+.search-square [aria-selected='true'] mark {
+  background: none;
+  color: var(--wl-brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Docs search dialog: square, like everything else. */
+.search-square,
+.search-square * {
+  border-radius: 0 !important;
+}
+.search-square {
+  border: 1px solid var(--wl-ink);
+}
+.post-body figure.shiki {
+  border-radius: 0;
+  border-color: var(--wl-ink);
+  font-size: 14px;
+}
+/* Changelog: the BREAKING CHANGE heading stands out, so nobody upgrades
+   past it unawares. */
+.post-body h3[id^='breaking-change'] {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  background: var(--wl-ink);
+  color: var(--wl-paper);
+  padding: 6px 8px;
+}
+
+/* Package-manager tabs (```npm blocks): square frame, mono tabs, a teal
+   underline on the picked one, like the open page in the sidebar. */
+.post-body div:has(> [role='tablist']) {
+  border-radius: 0;
+  border-color: var(--wl-ink);
+  overflow: hidden;
+}
+.post-body [role='tablist'] {
+  border-bottom: 1px solid var(--wl-ink);
+  padding-inline: 0;
+  gap: 0;
+}
+.post-body [role='tab'] {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 10px 14px;
+  border-right: 1px solid var(--wl-line);
+  color: color-mix(in srgb, var(--wl-ink) 65%, transparent);
+}
+.post-body [role='tab']:hover {
+  color: var(--wl-ink);
+  background: color-mix(in srgb, var(--wl-tint) 50%, transparent);
+}
+.post-body [role='tab'][aria-selected='true'] {
+  color: var(--wl-brand);
+}
+.post-body [role='tab'] > div {
+  inset-inline: 0;
+  height: 2px;
+}
+.post-body [role='tabpanel'] figure.shiki {
+  border: 0;
+  margin: 0;
+}
+
+/* Landing page code sample: same theme and frame as code in the docs. */
+.landing-code {
+  background-color: var(--shiki-light-bg, #fff);
+}
+.dark .landing-code {
+  background-color: var(--shiki-dark-bg, #1f1f1f);
+}
+.landing-code pre {
+  margin: 0;
+  padding: 20px;
+  background-color: var(--shiki-light-bg);
+}
+.dark .landing-code pre {
+  background-color: var(--shiki-dark-bg);
+}
+
+/* Paint the code theme's own background instead of fumadocs' card
+   colour. */
+.post-body figure.shiki {
+  background-color: var(--shiki-light-bg);
+}
+.dark .post-body figure.shiki {
+  background-color: var(--shiki-dark-bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pressable:active {
+    transform: none;
+  }
+  .card:hover .cover img {
+    transform: none;
+  }
+}

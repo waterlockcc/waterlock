@@ -1,0 +1,16 @@
+---
+title: "Gmail"
+icon: "gmail"
+description: "The Gmail provider: actions, decoded message context, harness."
+---
+
+```ts
+import { gmail } from "@waterlock/gateway/providers/gmail";
+
+gmail({ credentials });
+```
+
+- Actions: Gmail API method ids, e.g. `gmail.users.messages.send`. Full list: [codegen-report.md](https://github.com/waterlockcc/waterlock/blob/main/src/providers/gmail/codegen-report.md). See [Actions](/docs/concepts/actions).
+- `r.context` on `messages.send`, `drafts.create`, `drafts.update`: `recipients`, `recipient_domains`, `subject`, `text`, `html`, `attachments`, decoded from the message.
+- `r.context` on `drafts.send`: only `draft_id`; every other field is `null`. Gmail sends the stored draft, so the gateway can't see who it goes to or what it says. A rule that allows `drafts.send` allows sending any draft as it stands, including ones written outside the gateway.
+- Harness: stock `@googleapis/gmail` with `rootUrl` set to the gateway. See the [Quickstart](/docs/getting-started#quickstart).
