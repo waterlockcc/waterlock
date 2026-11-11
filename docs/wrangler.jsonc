@@ -11,6 +11,9 @@
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page"
   },
+  // Non-production branches deploy with `npx wrangler preview`, which needs
+  // this block. Empty: previews use the top-level assets and settings.
+  "previews": {},
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
