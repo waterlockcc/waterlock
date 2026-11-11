@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { IBM_Plex_Mono, IBM_Plex_Sans, Space_Grotesk } from 'next/font/google';
 import { Provider } from '@/components/provider';
-import { appName } from '@/lib/shared';
+import { appName, siteUrl } from '@/lib/shared';
 import './global.css';
 
 const sans = IBM_Plex_Sans({
@@ -22,7 +22,9 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: { template: `%s · ${appName}`, default: `${appName} blog` },
+  // Absolute URLs for social cards and canonical links.
+  metadataBase: new URL(siteUrl),
+  title: { template: `%s · ${appName}`, default: appName },
   icons: { icon: '/logo.svg' },
 };
 

@@ -1,0 +1,56 @@
+name: Site
+
+# The site in docs/ (blog, docs, changelog) is a static Next.js export. PRs
+# that touch it get a build check; merging to main deploys it to GitHub Pages,
+# served at https://waterlock.cc (custom domain set in the repo's Pages
+# settings; DNS at Cloudflare points waterlock.cc at waterlockcc.github.io).
+on:
+  push:
+    branches: [main]
+    paths: [docs/**, package.json, .github/workflows/site.yml]
+  pull_request:
+    paths: [docs/**, package.json, .github/workflows/site.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4 # version from the root package.json "packageManager"
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: docs/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: docs
+      - run: pnpm types:check
+        working-directory: docs
+      - run: pnpm build
+        working-directory: docs
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/out
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write # publish to GitHub Pages
+      id-token: write # OIDC token the Pages deploy needs
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

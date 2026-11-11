@@ -28,7 +28,7 @@ really broad permissions. What waterlock gives you
 
 ## Guide
 
-Install and usage: [wiki](https://github.com/waterlockcc/waterlock/wiki).
+Install and usage: [waterlock.cc/docs](https://waterlock.cc/docs). Release notes: [waterlock.cc/changelog](https://waterlock.cc/changelog).
 
 ## Bug reports
 

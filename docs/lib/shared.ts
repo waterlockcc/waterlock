@@ -1,4 +1,5 @@
 export const appName = 'waterlock';
+export const siteUrl = 'https://waterlock.cc';
 export const blogRoute = '/blog';
 export const docsRoute = '/docs';
 
