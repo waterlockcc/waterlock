@@ -1,9 +1,9 @@
 name: Site
 
 # The site in docs/ (landing page, blog, docs, changelog) is a static Next.js
-# export, deployed by Cloudflare Pages' Git integration to https://waterlock.cc
-# (Pages project settings: root directory `docs`, build command `pnpm build`,
-# output directory `out`, NODE_VERSION 24). This workflow only checks that it
+# export, deployed by Cloudflare Workers Builds to https://waterlock.cc (root
+# directory `docs`, build command `pnpm build`, deploy command `npx wrangler
+# deploy`; docs/wrangler.jsonc serves out/). This workflow only checks that it
 # still builds, so a broken site fails the PR here too.
 on:
   push:
