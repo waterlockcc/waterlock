@@ -1,16 +1,16 @@
 name: Site
 
-# The site in docs/ (blog, docs, changelog) is a static Next.js export. PRs
-# that touch it get a build check; merging to main deploys it to GitHub Pages,
-# served at https://waterlock.cc (custom domain set in the repo's Pages
-# settings; DNS at Cloudflare points waterlock.cc at waterlockcc.github.io).
+# The site in docs/ (landing page, blog, docs, changelog) is a static Next.js
+# export, deployed by Cloudflare Pages' Git integration to https://waterlock.cc
+# (Pages project settings: root directory `docs`, build command `pnpm build`,
+# output directory `out`, NODE_VERSION 24). This workflow only checks that it
+# still builds, so a broken site fails the PR here too.
 on:
   push:
     branches: [main]
     paths: [docs/**, package.json, .github/workflows/site.yml]
   pull_request:
     paths: [docs/**, package.json, .github/workflows/site.yml]
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -36,21 +36,3 @@ jobs:
         working-directory: docs
       - run: pnpm build
         working-directory: docs
-      - if: github.event_name != 'pull_request'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs/out
-
-  deploy:
-    if: github.event_name != 'pull_request'
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write # publish to GitHub Pages
-      id-token: write # OIDC token the Pages deploy needs
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    steps:
-      - id: deploy
-        uses: actions/deploy-pages@v4
