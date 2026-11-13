@@ -74,8 +74,10 @@ export function VersionSelect({ versions, pages }: { versions: Version[]; pages:
   );
 }
 
-/** LATEST / README ↗ tag beside a version. */
+/** LATEST / UNRELEASED / README ↗ tag beside a version. */
 function Tag({ version }: { version: Version }) {
+  if (version.next)
+    return <span className="label border border-current px-1.5 py-0.5 text-[10px] leading-none">Unreleased</span>;
   if (version.latest)
     return <span className="label bg-ink px-1.5 py-0.5 text-[10px] leading-none text-paper">Latest</span>;
   if (version.external)

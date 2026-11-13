@@ -1,0 +1,30 @@
+---
+title: "Introduction"
+description: "A gateway that holds your API keys and checks every call your agent makes against rules you write."
+---
+
+Open source solution to [workos airlock](https://workos.com/blog/workos-airlock). Currently in beta.
+
+## Why use this?
+
+You don't want to inject real creds into your agents since most of the applications have really broad permissions. What waterlock gives you:
+
+- A common language to work with permissions regardless of the application you choose.
+- Full visibility into what the accesses were like / audit logs (upcoming).
+- A gateway to proxy forward your external resource calls, preventing rogue agents from leaking your sensitive keys.
+- Static TypeScript functions that can work for validation.
+- Natural language for limiting what your agents can do. For example, with Gmail you can add the rule "No billing info allowed in emails", and a model you choose checks each call against it. These rules can only deny, never allow; see [Checks](/docs/concepts/checks).
+- You own the integration logic. With WorkOS, you are coupled to their infra. This is a more flexible approach to integration.
+- You own the AI layer: the AI SDK or Anthropic's SDK directly. Waterlock just works.
+
+## See it work
+
+An AI SDK agent on a real Linear workspace, through the gateway. Creating the issue and setting its priority are allowed. Moving it to another team is blocked by a TypeScript rule. Filing a refund with a card number is blocked by a plain-language check. Linear is queried before and after the run.
+
+![An AI SDK agent works on a real Linear workspace through the waterlock gateway](/demo.gif)
+
+## Next
+
+- [Getting started](/docs/getting-started): install, then a gateway in three steps.
+- Concepts: [Actions](/docs/concepts/actions), [Policies](/docs/concepts/policies), [Checks](/docs/concepts/checks), [Sessions](/docs/concepts/sessions), [Credentials](/docs/concepts/credentials) and the [Request flow](/docs/concepts/request-flow).
+- Providers: [Gmail](/docs/providers/gmail) and [Linear](/docs/providers/linear).

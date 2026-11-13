@@ -7,6 +7,7 @@ import { createElement } from 'react';
 import { z } from 'zod';
 import { isProvider, ProviderIcon } from '@/components/provider-icons';
 import { blogRoute, docsRoute } from './shared';
+import { docsUrl, newestRelease } from './versions';
 
 // One MDX file per post in content/blog. The file name is the URL slug.
 const posts = defineCollections({
@@ -58,7 +59,8 @@ export function getPosts(): Post[] {
     .sort((a, b) => b.data.date.localeCompare(a.data.date));
 }
 
-// Docs: content/docs, ordered and grouped by the meta.json files there.
+// Docs: content/docs, one folder per version (see lib/versions.ts), ordered
+// and grouped by the meta.json files there.
 const docsCollection = defineDocs({
   dir: 'content/docs',
   docs: {
@@ -82,9 +84,15 @@ const docsCollection = defineDocs({
   meta: { schema: metaSchema },
 });
 
+const docsSource = docsCollection.toFumadocsSource();
+
+/** The newest vX.Y folder in content/docs, served at /docs. */
+export const latestRelease = newestRelease(docsSource.files.map((file) => file.path.split('/')[0]!));
+
 export const docs = loader({
   baseUrl: docsRoute,
-  source: docsCollection.toFumadocsSource(),
+  source: docsSource,
+  url: (slugs) => docsUrl(slugs, latestRelease),
   // `icon: "gmail"` in a page's frontmatter shows that provider's mark in
   // the sidebar.
   icon: (icon) => (isProvider(icon) ? createElement(ProviderIcon, { id: icon, className: 'size-4 shrink-0' }) : undefined),
