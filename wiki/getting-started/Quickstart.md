@@ -43,7 +43,7 @@ oauth.setCredentials({ access_token: token });
 const api = gmail({ version: "v1", auth: oauth, rootUrl: "http://127.0.0.1:8787/" });
 
 await api.users.messages.send({ userId: "me", requestBody: { raw } });
-// denied -> 403 { error: { code: "policy_denied", message: "You can only send email to yourself." } }
+// denied -> throws: code 403, message "Error for waterlock proxy: You can only send email to yourself."
 ```
 
 Full runnable example: [examples/ai-sdk-send-email](https://github.com/waterlockcc/waterlock/tree/main/examples/ai-sdk-send-email).

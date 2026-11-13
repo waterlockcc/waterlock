@@ -35,6 +35,7 @@ export {
 export {
   createProvider,
   type Decoder,
+  type GatewayError,
   type ProviderDefinition,
   type RequestOf,
 } from "./core/provider.js";

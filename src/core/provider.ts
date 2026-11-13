@@ -11,6 +11,22 @@ export type Decoder = (input: {
   contentType: string | null;
 }) => object | Promise<object>;
 
+/** A call the gateway refused, before it is written as a response. */
+export interface GatewayError {
+  /** HTTP status, e.g. 403. */
+  status: number;
+  /** Gateway error code, e.g. `policy_denied`. */
+  code: string;
+  /**
+   * The reason with a fixed prefix, so the agent can tell the gateway refused
+   * the call and not the provider: `Error for waterlock proxy: <reason>`.
+   */
+  message: string;
+  action?: string;
+  /** Ids of the rules that denied the call. */
+  rules?: string[];
+}
+
 /**
  * `R` is the request type rules see for this provider. Type-only: drives policy
  * autocomplete and checks.
@@ -44,6 +60,12 @@ export interface ProviderDefinition<R extends AnyRequest = AnyRequest> {
   credentials: CredentialSource;
   /** Default: `Authorization: Bearer <token>`. */
   inject?: (input: { headers: Headers; credential: Credential }) => void;
+  /**
+   * Writes gateway errors in the shape the provider's own SDK parses, so its
+   * usual error class, code and message come through. Default: the generic
+   * REST body, or the GraphQL one on the GraphQL endpoint.
+   */
+  formatError?: (error: GatewayError) => Response;
   /** Type-only marker, never set at runtime. */
   readonly __request?: R;
 }

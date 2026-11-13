@@ -1,6 +1,11 @@
 import type { AddressInfo } from "node:net";
 import { serve, type ServerType } from "@hono/node-server";
-import { LinearClient } from "@linear/sdk";
+import {
+  ForbiddenLinearError,
+  LinearClient,
+  LinearErrorType,
+  type LinearError,
+} from "@linear/sdk";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { fakeUpstream, type SeenRequest } from "./fixtures/fake-upstream.js";
 import { createGateway, createSessions, staticToken } from "../src/index.js";
@@ -116,10 +121,17 @@ describe("gateway with the stock Linear SDK", () => {
     const { api } = await client();
     const err = (await api
       .createIssue({ teamId: "team-finance", title: "x" })
-      .catch((e: unknown) => e)) as Error & { status?: number };
-    expect(err).toBeInstanceOf(Error);
+      .catch((e: unknown) => e)) as LinearError;
+    expect(err).toBeInstanceOf(ForbiddenLinearError);
     expect(err.status).toBe(403);
-    expect(err.message).toContain("Issues only in the agents team.");
+    expect(err.type).toBe(LinearErrorType.Forbidden);
+    expect(err.message).toContain(
+      "Error for waterlock proxy: Issues only in the agents team.",
+    );
+    expect(err.errors?.[0]).toMatchObject({
+      type: LinearErrorType.Forbidden,
+      message: "Error for waterlock proxy: Issues only in the agents team.",
+    });
     expect(upstream).toHaveLength(0);
   });
 
@@ -156,7 +168,10 @@ describe("gateway with the stock Linear SDK", () => {
           headers: auth,
         }),
       ),
-    ).toEqual({ status: 405, message: "GraphQL requests must be POST" });
+    ).toEqual({
+      status: 405,
+      message: "Error for waterlock proxy: GraphQL requests must be POST",
+    });
     expect(
       await errors(
         await fetch(`${base}/graphql`, {
@@ -167,13 +182,15 @@ describe("gateway with the stock Linear SDK", () => {
       ),
     ).toEqual({
       status: 400,
-      message: "content-type must be application/json",
+      message:
+        "Error for waterlock proxy: content-type must be application/json",
     });
-    const rest = await fetch(`${base}/v1/issues`, { headers: auth });
-    expect(rest.status).toBe(404);
     expect(
-      ((await rest.json()) as { error: { message: string } }).error.message,
-    ).toBe("no linear operation matches path");
+      await errors(await fetch(`${base}/v1/issues`, { headers: auth })),
+    ).toEqual({
+      status: 404,
+      message: "Error for waterlock proxy: no linear operation matches path",
+    });
     expect(upstream).toHaveLength(0);
   });
 

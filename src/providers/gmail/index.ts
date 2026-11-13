@@ -7,6 +7,7 @@ import {
   decodeMessageSend,
 } from "./decode.js";
 import type { GmailDraftSendContext, GmailMessageContext } from "./decode.js";
+import { googleError } from "./errors.js";
 import { gmailTable, type GmailAction, type GmailParams } from "./generated.js";
 
 export type { GmailAction, GmailParams } from "./generated.js";
@@ -66,5 +67,6 @@ export function gmail(opts: {
       "gmail.users.drafts.send": ({ body }) => decodeDraftSend(body),
     },
     credentials: opts.credentials,
+    formatError: googleError,
   });
 }
