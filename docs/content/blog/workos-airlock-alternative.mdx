@@ -1,0 +1,67 @@
+---
+title: "waterlock: an open-source alternative to WorkOS Airlock"
+description: "WorkOS Airlock checks every agent call against its intent and your policies. waterlock does the same as an open-source TypeScript library, with your integrations, your auth and your AI stack."
+author: nikoz99
+category: Product
+art: lock
+date: 2026-11-14T12:00:00Z
+---
+
+[WorkOS Airlock](https://workos.com/blog/workos-airlock) is intent-based access control for AI agents. It sits between your agent and the APIs it calls, and checks every call against what the agent is supposed to be doing and the policies you set. Say you ask an agent what everyone shipped last month. It should read your issue tracker. If it reaches for Stripe instead, that call doesn't match the task, and it gets blocked.
+
+waterlock does the same thing, open source, as a TypeScript library you add to your project. You keep full control. It doesn't care how you manage your integrations, your auth or your LLM calls. And it gives you one permission language for every product you use.
+
+## How the two compare
+
+Both put a gateway between the agent and the API. The agent never holds the real credential, and every call is checked before it reaches the provider. The difference is who runs it and what you're tied to.
+
+| | WorkOS Airlock | waterlock |
+|---|---|---|
+| What it is | A WorkOS product, in early access | An open-source npm package, `@waterlock/gateway` |
+| Provider connections | Managed through WorkOS Pipes | Yours: pass in a token or your own credential source |
+| Rules | Natural language, turned into fixed rules plus runtime checks | TypeScript functions, typed per provider, plus plain-language checks |
+| Intent | The agent declares it, and its token is tied to it | Your launcher sets it on the session, and checks read what the user asked for |
+| Model for checks | Part of the product | Yours: the AI SDK, Anthropic, anything that returns a verdict |
+| Human approval | Built in, e.g. through Slack | Not yet |
+
+If you're already on WorkOS and want approvals out of the box, Airlock makes sense. If you want to run the gateway yourself, read the code that decides each call, and keep your stack as it is, that's what waterlock is for.
+
+## The same idea in code
+
+Back to "what shipped last month". On the trusted side, you mint a session for Linear only, with the task attached:
+
+```ts
+const { token } = await sessions.mint({
+  provider: 'linear',
+  agent: 'reporter',
+  onBehalfOf: 'alice@acme.com',
+  intent: 'Summarise what each team shipped last month',
+});
+```
+
+The token works for Linear and nothing else, so the Stripe call has nowhere to go. Inside Linear, the policy allows reads, and a plain-language check catches anything that drifts from the task:
+
+```ts
+policy: [
+  { when: (r) => r.action.startsWith('linear.query.') },
+  {
+    when: 'The request is unrelated to what the user asked for',
+    action: 'deny',
+    reason: 'That call is outside the task.',
+  },
+],
+```
+
+The first row is plain TypeScript. Anything it doesn't allow is denied. The second row is answered by a model you call, and it can only deny, so a confused model can't open anything up. Mutations are never allowed in the first place.
+
+## Learn once, use everywhere
+
+Every provider speaks the same rule language: an `action`, its typed `params`, and the session. Gmail, Linear and the next provider all work the same way, so adding a tool doesn't mean learning a new permission system. More on that in [why permissions suck today](/blog/permissions-suck).
+
+## Try it
+
+```npm
+npm i @waterlock/gateway
+```
+
+Start with the [quickstart](/docs/getting-started), then read how [policies](/docs/concepts/policies) and [checks](/docs/concepts/checks) decide each call.
