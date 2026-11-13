@@ -94,7 +94,7 @@ Each breaking entry says what changed, who it affects, and the exact migration, 
 
 In the PR that bumps `version` in `package.json`:
 
-1. Snapshot the docs first, while the label is still the old version: `pnpm docs:snapshot` in `docs/` (see `docs/README.md`).
+1. Bump `version`, then release the docs: `pnpm docs:release` in `docs/` copies `content/docs/next` to `content/docs/vX.Y`, the new latest (see `docs/README.md`).
 2. Add `<version>.mdx` for the new version with `version`, `date` (the release day), `title`, `summary`, the sections, and the compare link from the previous tag.
 
 Then check the page: `pnpm dev` in `docs/`, open `/changelog`.

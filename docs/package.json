@@ -11,7 +11,7 @@
     "dev": "next dev",
     "start": "serve out",
     "types:check": "next typegen && tsc --noEmit",
-    "docs:snapshot": "node scripts/snapshot-docs.mjs"
+    "docs:release": "node scripts/release-docs.mjs"
   },
   "dependencies": {
     "@base-ui/react": "1.9.0",

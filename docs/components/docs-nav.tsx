@@ -24,39 +24,73 @@ export function SearchButton({ className }: { className?: string }) {
   );
 }
 
+type Changes = Record<string, 'new' | 'updated'>;
+
+/** "New" / "Updated" beside a page in next; with `since`, "Updated since v0.2". */
+export function ChangeTag({
+  change,
+  since,
+  className,
+}: {
+  change: 'new' | 'updated';
+  since?: string;
+  className?: string;
+}) {
+  const text = change === 'new' ? 'New' : since ? `Updated since ${since}` : 'Updated';
+  return (
+    <span
+      className={clsx(
+        'label inline-block border border-current px-1.5 py-0.5 text-[10px] leading-none text-brand',
+        className,
+      )}
+    >
+      {text}
+    </span>
+  );
+}
+
 /**
  * Sidebar: version picker, search, then `/ SECTION` labels with pages under
- * them and a teal bar on the open page. `nodes` is one version's tree.
+ * them and a teal bar on the open page. `nodes` is one version's tree;
+ * `changes` tags the pages that differ from the latest release.
  */
-export function DocsSidebar({ nodes, versionSelect }: { nodes: PageTree.Node[]; versionSelect?: ReactNode }) {
+export function DocsSidebar({
+  nodes,
+  versionSelect,
+  changes = {},
+}: {
+  nodes: PageTree.Node[];
+  versionSelect?: ReactNode;
+  changes?: Changes;
+}) {
   return (
     <nav aria-label="Docs" className="flex flex-col gap-8">
       <div className="flex flex-col gap-2">
         {versionSelect}
         <SearchButton />
       </div>
-      <Nodes nodes={nodes} />
+      <Nodes nodes={nodes} changes={changes} />
     </nav>
   );
 }
 
-function Nodes({ nodes }: { nodes: PageTree.Node[] }) {
+function Nodes({ nodes, changes }: { nodes: PageTree.Node[]; changes: Changes }) {
   const pages: ReactNode[] = [];
   const out: ReactNode[] = [];
   const flush = () => {
     if (pages.length) out.push(<ul key={`p${out.length}`} className="flex flex-col">{pages.splice(0)}</ul>);
   };
   for (const node of nodes) {
-    if (node.type === 'page') pages.push(<PageLink key={node.url} node={node} />);
+    if (node.type === 'page') pages.push(<PageLink key={node.url} node={node} change={changes[node.url]} />);
     else if (node.type === 'folder') {
       flush();
       out.push(
         <div key={node.$id ?? String(node.name)}>
           <p className="label mb-3 opacity-60">/ {node.name}</p>
           <ul className="flex flex-col">
-            {node.index && <PageLink node={node.index} />}
+            {node.index && <PageLink node={node.index} change={changes[node.index.url]} />}
             {node.children.map((child) =>
-              child.type === 'page' ? <PageLink key={child.url} node={child} /> : null,
+              child.type === 'page' ? <PageLink key={child.url} node={child} change={changes[child.url]} /> : null,
             )}
           </ul>
         </div>,
@@ -70,7 +104,7 @@ function Nodes({ nodes }: { nodes: PageTree.Node[] }) {
   return <>{out}</>;
 }
 
-function PageLink({ node }: { node: PageTree.Item }) {
+function PageLink({ node, change }: { node: PageTree.Item; change?: 'new' | 'updated' }) {
   const active = usePathname() === node.url;
   return (
     <li>
@@ -84,6 +118,7 @@ function PageLink({ node }: { node: PageTree.Item }) {
       >
         {node.icon}
         {node.name}
+        {change && <ChangeTag change={change} className="ms-auto" />}
       </Link>
     </li>
   );
@@ -94,10 +129,12 @@ export function MobileDocsNav({
   nodes,
   current,
   versionSelect,
+  changes,
 }: {
   nodes: PageTree.Node[];
   current: string;
   versionSelect?: ReactNode;
+  changes?: Changes;
 }) {
   const ref = useRef<HTMLDetailsElement>(null);
   const pathname = usePathname();
@@ -113,7 +150,7 @@ export function MobileDocsNav({
         <ChevronDown className="ms-auto size-4 transition-transform group-open:rotate-180" aria-hidden />
       </summary>
       <div className="border-t border-ink p-4">
-        <DocsSidebar nodes={nodes} versionSelect={versionSelect} />
+        <DocsSidebar nodes={nodes} versionSelect={versionSelect} changes={changes} />
       </div>
     </details>
   );

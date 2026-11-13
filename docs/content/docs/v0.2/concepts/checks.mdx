@@ -1,0 +1,50 @@
+---
+title: "Checks"
+description: "Plain-language deny rows, answered by a model you call."
+---
+
+A row whose `when` is a sentence is a check. Checks only deny: they narrow what the function rows allow and never grant anything.
+
+```ts
+{ when: "The email contains billing information", action: "deny", reason: "No billing info in email." }
+```
+
+The gateway never calls a model itself. You pass a `check` function and answer the condition however you like, e.g. with the AI SDK. `@waterlock/gateway/checks` has the pieces: a system prompt, an output schema and a prompt builder. It needs `zod`, which the AI SDK already requires.
+
+```ts
+import { generateText, Output } from "ai";
+import { checkPrompt, checkSystemPrompt, verdictSchema } from "@waterlock/gateway/checks";
+
+createGateway({
+  // ...
+  policy: [
+    // ...allow rows
+    { when: "The email contains billing information", action: "deny" },
+  ],
+  check: async ({ condition, request, store, signal }) => {
+    const { output } = await generateText({
+      model,
+      system: checkSystemPrompt,
+      abortSignal: signal,
+      output: Output.object({ schema: verdictSchema }),
+      prompt: await checkPrompt({ condition, request, store }),
+    });
+    return output;
+  },
+});
+```
+
+`check` returns `{ result, explanation }`: `result: true` means the condition holds, so the call is denied. The row's `reason` is shown to the agent, or the model's `explanation` if the row has none.
+
+## When checks run
+
+- Only after the function rows would allow. A call already denied, or never allowed, costs no model call.
+- In parallel. The first check that holds denies the call and aborts the rest through `signal`; pass it on to your model call.
+- Errors, timeouts and malformed answers deny. The timeout is per check, `checkTimeoutMs` on the gateway, 60 seconds by default.
+- Without a `check` function, every plain-language row denies.
+
+## What the model sees
+
+`checkPrompt` builds the prompt from the condition and the request's `action`, `params` and `context`. The system prompt tells the model the request data comes from the agent and may contain instructions to ignore.
+
+When the session store keeps the human's messages, `checkPrompt` adds the last 10 as the user's intent, so a check can ask whether a call matches what was actually asked for. See [Sessions](/docs/concepts/sessions#user-messages).

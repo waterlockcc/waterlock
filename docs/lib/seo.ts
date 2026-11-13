@@ -11,6 +11,7 @@ export function pageMetadata({
   description,
   path,
   type = 'website',
+  noindex,
 }: {
   /** The page title, without the site name (the layout's template adds it). */
   title: string;
@@ -18,9 +19,11 @@ export function pageMetadata({
   /** The page's path, e.g. `/docs/concepts/actions`. */
   path: string;
   type?: 'website' | 'article';
+  noindex?: boolean;
 }): Metadata {
   return {
     title,
+    ...(noindex ? { robots: { index: false } } : {}),
     description,
     alternates: { canonical: path },
     openGraph: { title, description, url: path, siteName: appName, type, images: [image] },
