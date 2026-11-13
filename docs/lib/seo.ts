@@ -10,6 +10,7 @@ export function pageMetadata({
   title,
   description,
   path,
+  canonical = path,
   type = 'website',
   noindex,
 }: {
@@ -18,6 +19,8 @@ export function pageMetadata({
   description?: string;
   /** The page's path, e.g. `/docs/concepts/actions`. */
   path: string;
+  /** The URL search engines should rank instead of this one. Defaults to `path`. */
+  canonical?: string;
   type?: 'website' | 'article';
   noindex?: boolean;
 }): Metadata {
@@ -25,7 +28,7 @@ export function pageMetadata({
     title,
     ...(noindex ? { robots: { index: false } } : {}),
     description,
-    alternates: { canonical: path },
+    alternates: { canonical },
     openGraph: { title, description, url: path, siteName: appName, type, images: [image] },
     twitter: { card: 'summary_large_image', title, description, images: [image.url] },
   };

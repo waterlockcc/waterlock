@@ -174,11 +174,18 @@ export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): P
   const { slug } = await props.params;
   const page = pageAt(slug);
   if (!page) notFound();
+  const version = versionOf(page.url, getVersions(docs.getPageTree()));
+  // An older release's page sends its rank to the same page in the latest
+  // docs, so the two don't compete in search. One the latest docs no longer
+  // have stays out of search.
+  const old = !version.latest && !version.next;
+  const current = old ? byUrl.get(docsRoute + page.url.slice(version.url.length)) : undefined;
   return pageMetadata({
     title: page.data.title,
     description: page.data.description,
     path: page.url,
+    canonical: current?.url,
     // Unreleased docs stay out of search engines; /docs is the version to find.
-    noindex: versionOf(page.url, getVersions(docs.getPageTree())).next,
+    noindex: version.next || (old && !current),
   });
 }
