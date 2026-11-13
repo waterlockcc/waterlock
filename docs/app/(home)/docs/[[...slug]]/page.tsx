@@ -7,12 +7,13 @@ import { notFound } from 'next/navigation';
 import { ChangeTag, DocsSidebar, DocsToc, MobileDocsNav } from '@/components/docs-nav';
 import { MeetsArt } from '@/components/meets-art';
 import { getMDXComponents } from '@/components/mdx';
+import { JsonLd } from '@/components/json-ld';
 import { isProvider } from '@/components/provider-icons';
 import { container, heroBand } from '@/components/ui';
 import { VersionSelect } from '@/components/version-select';
 import { nextChanges } from '@/lib/changes';
 import { pageMetadata } from '@/lib/seo';
-import { docsRoute } from '@/lib/shared';
+import { docsRoute, siteUrl } from '@/lib/shared';
 import { docs } from '@/lib/source';
 import { getVersions, versionHref, versionOf, versionTree } from '@/lib/versions';
 
@@ -47,8 +48,35 @@ export default async function DocsPage(props: PageProps<'/docs/[[...slug]]'>) {
   )?.name;
   const { previous, next } = findNeighbour({ name: 'docs', children: nodes }, page.url);
 
+  // Breadcrumbs for search results: Docs, the section (when it has its own
+  // page), then this page. Not on a version's first page, which is Docs.
+  const trail = findPath(nodes, (node) => node.type === 'page' && node.url === page.url) ?? [];
+  const crumbs = [
+    { name: 'Docs', url: version.url },
+    ...trail.flatMap((node) =>
+      node.type === 'folder' && node.index && typeof node.name === 'string'
+        ? [{ name: node.name, url: node.index.url }]
+        : [],
+    ),
+    { name: title, url: page.url },
+  ];
+
   return (
     <>
+      {page.url !== version.url && (
+        <JsonLd
+          data={{
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: crumbs.map((crumb, i) => ({
+              '@type': 'ListItem',
+              position: i + 1,
+              name: crumb.name,
+              item: `${siteUrl}${crumb.url}`,
+            })),
+          }}
+        />
+      )}
       <section className={heroBand}>
         <div
           className={`${container} grid grid-cols-1 items-center gap-10 pt-12 pb-14 sm:pt-16 sm:pb-20 ${isProvider(icon) ? 'lg:grid-cols-2' : ''}`}

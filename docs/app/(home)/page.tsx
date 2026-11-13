@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { CopyCommand } from '@/components/copy-command';
 import { Dither } from '@/components/dither';
+import { JsonLd } from '@/components/json-ld';
 import { ProviderIcon, type ProviderId } from '@/components/provider-icons';
 import { button, container, heroBand } from '@/components/ui';
 import { pageMetadata } from '@/lib/seo';
@@ -17,17 +18,31 @@ export const metadata: Metadata = {
   title: { absolute: 'waterlock: a policy gateway for AI agents' },
 };
 
-// Structured data: tells search engines this is an open-source library.
+// Structured data: tells search engines this is an open-source library, and
+// a free developer tool.
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'SoftwareSourceCode',
-  name: 'waterlock',
-  description: pitch,
-  url: siteUrl,
-  codeRepository: links.github,
-  programmingLanguage: 'TypeScript',
-  runtimePlatform: 'Node.js',
-  license: 'https://opensource.org/licenses/MIT',
+  '@graph': [
+    {
+      '@type': 'SoftwareSourceCode',
+      name: 'waterlock',
+      description: pitch,
+      url: siteUrl,
+      codeRepository: links.github,
+      programmingLanguage: 'TypeScript',
+      runtimePlatform: 'Node.js',
+      license: 'https://opensource.org/licenses/MIT',
+    },
+    {
+      '@type': 'SoftwareApplication',
+      name: 'waterlock',
+      description: pitch,
+      url: siteUrl,
+      applicationCategory: 'DeveloperApplication',
+      operatingSystem: 'Node.js',
+      offers: { '@type': 'Offer', price: 0, priceCurrency: 'USD' },
+    },
+  ],
 };
 
 const steps = [
@@ -83,11 +98,7 @@ export default async function Home() {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        // Our own constant object, serialised; no user input reaches it.
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
-      />
+      <JsonLd data={jsonLd} />
       <section className={heroBand}>
         <div className={`${container} grid grid-cols-1 gap-10 pt-14 pb-20 sm:pt-24 sm:pb-32 lg:grid-cols-2 lg:items-end`}>
           <h1 className="brand-display text-[48px] leading-[50px] sm:text-[76px] sm:leading-[76px]">

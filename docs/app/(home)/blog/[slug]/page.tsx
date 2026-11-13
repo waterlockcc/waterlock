@@ -2,10 +2,12 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { CopyLink } from '@/components/copy-link';
 import { CoverArt } from '@/components/cover-art';
+import { JsonLd } from '@/components/json-ld';
 import { getMDXComponents } from '@/components/mdx';
 import { container } from '@/components/ui';
 import { formatDate } from '@/lib/format';
 import { pageMetadata } from '@/lib/seo';
+import { appName, siteUrl } from '@/lib/shared';
 import { blog } from '@/lib/source';
 
 export default async function Post(props: PageProps<'/blog/[slug]'>) {
@@ -18,6 +20,20 @@ export default async function Post(props: PageProps<'/blog/[slug]'>) {
   const column = 'mx-auto w-full max-w-[640px]';
   return (
     <>
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'BlogPosting',
+          headline: title,
+          description,
+          datePublished: date,
+          // Authors are GitHub handles.
+          author: { '@type': 'Person', name: author, url: `https://github.com/${author}` },
+          publisher: { '@type': 'Organization', name: appName, url: siteUrl, logo: `${siteUrl}/logo.svg` },
+          mainEntityOfPage: `${siteUrl}${post.url}`,
+          image: `${siteUrl}${image ?? '/og.png'}`,
+        }}
+      />
       {/* The card's cover fills the hero, in teal (the band's colours, in
           both themes), faded into the band under the text. */}
       <section className="post-hero relative isolate overflow-hidden bg-band text-on-band">
@@ -89,5 +105,11 @@ export async function generateMetadata(props: PageProps<'/blog/[slug]'>): Promis
   const { slug } = await props.params;
   const post = blog.getPage([slug]);
   if (!post) notFound();
-  return pageMetadata({ title: post.data.title, description: post.data.description, path: post.url, type: 'article' });
+  return pageMetadata({
+    title: post.data.title,
+    description: post.data.description,
+    path: post.url,
+    type: 'article',
+    image: post.data.image,
+  });
 }
