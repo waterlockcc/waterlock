@@ -294,7 +294,7 @@ html > body[data-scroll-locked] {
 }
 /* Changelog: the BREAKING CHANGE heading stands out, so nobody upgrades
    past it unawares. */
-.post-body h3[id^='breaking-change'] {
+.post-body h3[id$='breaking-change'] {
   display: inline-flex;
   align-items: center;
   font-family: var(--font-mono);
@@ -307,7 +307,7 @@ html > body[data-scroll-locked] {
 }
 /* The heading's copy-link button is invisible until hover but still takes
    room, pushing the label off-center in the tag. */
-.post-body h3[id^='breaking-change'] > button {
+.post-body h3[id$='breaking-change'] > button {
   display: none;
 }
 
