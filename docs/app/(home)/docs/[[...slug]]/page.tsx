@@ -181,7 +181,7 @@ export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): P
   const old = !version.latest && !version.next;
   const current = old ? byUrl.get(docsRoute + page.url.slice(version.url.length)) : undefined;
   return pageMetadata({
-    title: page.data.title,
+    title: page.data.seoTitle ?? page.data.title,
     description: page.data.description,
     path: page.url,
     canonical: current?.url,

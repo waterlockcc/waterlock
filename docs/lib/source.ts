@@ -64,7 +64,10 @@ export function getPosts(): Post[] {
 const docsCollection = defineDocs({
   dir: 'content/docs',
   docs: {
-    schema: pageSchema,
+    schema: pageSchema.extend({
+      // <title> for search results; the page heading keeps `title`.
+      seoTitle: z.string().optional(),
+    }),
     // Code blocks: Min, light and dark. A ```npm block becomes npm /
     // pnpm / bun tabs, npm first (the default); the pick is saved in
     // localStorage and shared by every block. Repeated per collection: the
