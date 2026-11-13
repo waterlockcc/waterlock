@@ -15,9 +15,14 @@ Every call goes through the same steps. Any step can stop it.
 
 Every error message starts with `Error for waterlock proxy: `, followed by the reason. The agent can tell the gateway refused the call, not the provider, and won't treat it as an outage to retry.
 
-Built-in providers answer in the shape their official SDK parses, so a denial surfaces like any other error from that SDK. See [Gmail](/docs/providers/gmail#errors) and [Linear](/docs/providers/linear#errors).
+Errors are handled per provider. Each provider answers in the shape its official SDK parses, so a denial surfaces like any other error from that SDK, with its usual error class, code and message. The shape, and what the SDK exposes, is on each provider's page, under Errors:
 
-Other providers get a generic body. REST: `{ error: { code, message, action?, rules? } }`. On a GraphQL endpoint, GraphQL's shape, so clients surface the message: `{ errors: [{ message, extensions: { code, action?, rules? } }] }`. `unauthenticated` and `unknown_provider` happen before the gateway knows the provider, so they always use the generic REST body.
+- [Gmail](/docs/providers/gmail#errors): Google's error format.
+- [Linear](/docs/providers/linear#errors): GraphQL errors with Linear's `extensions`.
+
+A generic body is the fallback, decided case by case: for a provider whose SDK has no error format to match, and for [custom providers](#custom-providers) that don't set one. REST: `{ error: { code, message, action?, rules? } }`. On a GraphQL endpoint, GraphQL's shape, so clients still surface the message: `{ errors: [{ message, extensions: { code, action?, rules? } }] }`. `unauthenticated` and `unknown_provider` happen before the gateway knows the provider, so they always use the generic REST body.
+
+Every format carries the same `code` values:
 
 | Status | `code` | When |
 |---|---|---|
