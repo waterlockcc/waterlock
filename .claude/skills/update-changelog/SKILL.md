@@ -63,7 +63,7 @@ Anything only the people working on the repo notice, even if the PR was large:
 
 - Tests, CI, release tooling, scripts.
 - Formatting, linting, refactors, renames of internals, file moves.
-- Docs, README, wiki, site, examples and demos.
+- Docs, README, site, examples and demos.
 - Dependency bumps with no visible effect.
 - Regenerated provider files when the API they describe didn't change.
 
