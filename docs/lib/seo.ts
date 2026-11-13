@@ -19,7 +19,7 @@ export function pageMetadata({
   description?: string;
   /** The page's path, e.g. `/docs/concepts/actions`. */
   path: string;
-  /** The URL search engines should rank instead of this one. Defaults to `path`. */
+  /** The URL search engines should rank for this page. Default: `path`. */
   canonical?: string;
   type?: 'website' | 'article';
   noindex?: boolean;
