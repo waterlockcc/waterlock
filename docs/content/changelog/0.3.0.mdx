@@ -1,0 +1,29 @@
+---
+title: "Errors in each provider's SDK shape"
+version: "0.3.0"
+date: 2026-11-13
+summary: "Gateway errors come back the way each provider's official SDK reads them, and every message says the gateway refused the call."
+---
+
+### BREAKING CHANGE
+
+- Gmail errors use Google's error format, so `error.code` is the HTTP status (`403`), not `"policy_denied"`. If you match on the code, match on the reason instead. ([#41](https://github.com/waterlockcc/waterlock/pull/41))
+
+  ```ts
+  // before
+  err.response.data.error.code === "policy_denied";
+  // after
+  err.response.data.error.errors[0].reason === "policyDenied";
+  ```
+
+- Every error message starts with `Error for waterlock proxy: `. Code that compares messages exactly needs the prefix. ([#41](https://github.com/waterlockcc/waterlock/pull/41))
+- Linear errors outside the GraphQL endpoint use GraphQL's shape, `{ errors: [...] }`, instead of `{ error: {...} }`. ([#41](https://github.com/waterlockcc/waterlock/pull/41))
+
+### Added
+
+- **Errors in each provider's SDK shape.** A denial surfaces like any other error from that SDK. See [Request flow](/docs/concepts/request-flow#errors). ([#41](https://github.com/waterlockcc/waterlock/pull/41))
+  - Gmail: `@googleapis/gmail` throws with `code` `403` and `Error for waterlock proxy: <reason>` as its message. The body has `status: "PERMISSION_DENIED"` and `domain: "waterlock.cc"`, so you can tell a gateway denial from one of Gmail's own. See [Gmail errors](/docs/providers/gmail#errors).
+  - Linear: `@linear/sdk` throws a `ForbiddenLinearError` (`LinearErrorType.Forbidden`) whose message includes the reason. See [Linear errors](/docs/providers/linear#errors).
+- `formatError` on a provider definition, to answer in your own provider's shape, and the `GatewayError` type it receives. Without it, custom providers keep the generic REST or GraphQL body. ([#41](https://github.com/waterlockcc/waterlock/pull/41))
+
+[Compare v0.2.0...v0.3.0](https://github.com/waterlockcc/waterlock/compare/v0.2.0...v0.3.0)

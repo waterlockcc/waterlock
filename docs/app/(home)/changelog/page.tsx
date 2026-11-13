@@ -1,4 +1,6 @@
+import defaultMdxComponents from 'fumadocs-ui/mdx';
 import type { Metadata } from 'next';
+import type { ComponentProps } from 'react';
 import { GitHubIcon, NpmIcon } from '@/components/brand-icons';
 import { Dither } from '@/components/dither';
 import { getMDXComponents } from '@/components/mdx';
@@ -16,6 +18,20 @@ const releaseLink = 'pressable grid size-9 place-items-center border border-ink 
 
 // Anchor per release: /changelog#v0-2-0
 const anchor = (r: Release) => `v${r.version.replaceAll('.', '-')}`;
+
+/**
+ * Every release has its own `### Added`, so heading anchors carry the
+ * release's: /changelog#v0-2-0-added, not #added.
+ */
+function headings(prefix: string) {
+  const { h2: H2, h3: H3, h4: H4 } = defaultMdxComponents;
+  const id = (props: { id?: string }) => (props.id ? `${prefix}-${props.id}` : undefined);
+  return {
+    h2: (props: ComponentProps<typeof H2>) => <H2 {...props} id={id(props)} />,
+    h3: (props: ComponentProps<typeof H3>) => <H3 {...props} id={id(props)} />,
+    h4: (props: ComponentProps<typeof H4>) => <H4 {...props} id={id(props)} />,
+  };
+}
 
 export default function ChangelogPage() {
   const releases = getReleases();
@@ -96,7 +112,7 @@ function Entry({ release, latest }: { release: Release; latest: boolean }) {
         <h2 className="display text-[28px] leading-[34px]">{release.title}</h2>
         <p className="mt-3 text-lg leading-7 opacity-75">{release.summary}</p>
         <div className="post-body prose mt-6 max-w-none min-w-0">
-          <Body components={getMDXComponents()} />
+          <Body components={getMDXComponents(headings(id))} />
         </div>
       </div>
     </article>

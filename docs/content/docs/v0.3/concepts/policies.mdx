@@ -1,0 +1,49 @@
+---
+title: "Policies"
+description: "Allow and deny rows in TypeScript. Default deny: a call goes through only if an allow row matches and no deny row does."
+---
+
+A policy is a list of rows. Each row has a `when`, an optional `action` (`"allow"` by default, or `"deny"`) and an optional `reason`.
+
+```ts
+policy: [
+  { when: (r) => r.action === "gmail.users.messages.list" }, // allow
+  {
+    when: (r) => r.action === "gmail.users.messages.list" && (r.params.maxResults ?? 0) > 50,
+    action: "deny",
+    reason: "List at most 50 messages per page.",
+  },
+]
+```
+
+`when` functions are sync and get the request:
+
+| Field | What it is |
+|---|---|
+| `r.provider` | The provider id, e.g. `"gmail"`. |
+| `r.action` | The call, e.g. `"gmail.users.messages.send"`. See [Actions](/docs/concepts/actions). |
+| `r.params` | Path, query or GraphQL arguments, typed per action. |
+| `r.context` | Fields the provider decoded from the body, e.g. Gmail `recipients`. |
+| `r.session` | The [session](/docs/concepts/sessions) claims: `agent`, `onBehalfOf`, `intent`, `sid`. |
+
+Pass the rows inline to `createGateway`, typed from its `providers`, or build them with `definePolicy(rows)`. Either way the policy must cover every provider on the gateway.
+
+## How a call is decided
+
+1. Function rows run. A row that throws or returns something other than a boolean denies.
+2. A matching deny row denies, with its `reason`. Nothing else runs.
+3. No allow row matched: deny (default deny).
+4. No plain-language rows in the policy: allow.
+5. Plain-language rows run (see [Checks](/docs/concepts/checks)). The first one that holds denies; if none hold, allow.
+
+A model can only take away what the function rows allowed. It can never allow a call by itself.
+
+## What the agent sees
+
+A denied call gets a `403` with `code: "policy_denied"`, the row's `reason` as the message, the action, and the rows that decided it as `#<index>` into the policy:
+
+```json
+{ "error": { "code": "policy_denied", "message": "List at most 50 messages per page.", "action": "gmail.users.messages.list", "rules": ["#1"] } }
+```
+
+GraphQL providers return the same fields in GraphQL's error shape. See [Request flow](/docs/concepts/request-flow).
