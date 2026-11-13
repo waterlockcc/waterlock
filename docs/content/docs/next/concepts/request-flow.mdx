@@ -22,7 +22,7 @@ Errors are handled per provider. Each provider answers in the shape its official
 
 A generic body is the fallback, decided case by case: for a provider whose SDK has no error format to match, and for [custom providers](#custom-providers) that don't set one. REST: `{ error: { code, message, action?, rules? } }`. On a GraphQL endpoint, GraphQL's shape, so clients still surface the message: `{ errors: [{ message, extensions: { code, action?, rules? } }] }`. `unauthenticated` and `unknown_provider` happen before the gateway knows the provider, so they always use the generic REST body.
 
-Every format carries the same `code` values:
+The gateway's error codes. Each provider page says where the code goes in its shape:
 
 | Status | `code` | When |
 |---|---|---|
