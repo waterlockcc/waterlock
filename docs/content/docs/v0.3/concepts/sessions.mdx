@@ -1,0 +1,54 @@
+---
+title: "Sessions"
+description: "Signed, short-lived tokens: the only credential the agent holds."
+---
+
+The agent never sees an API key. It gets a session token, minted on your trusted side, and sends it as its bearer token. The gateway checks the signature, reads which provider and user the token is for, and only then looks at the call.
+
+```ts
+import { createSessions, memoryStore } from "@waterlock/gateway";
+
+const sessions = createSessions({
+  signingKey: process.env.WATERLOCK_SIGNING_KEY!, // at least 32 bytes
+  defaultTtlSeconds: 900, // the default: 15 minutes
+  store: memoryStore(), // optional, see below
+});
+
+const { token } = await sessions.mint({
+  provider: "gmail",
+  agent: "assistant",
+  onBehalfOf: "alice@acme.com",
+  intent: "Triage the inbox", // optional
+  ttlSeconds: 3600,
+});
+```
+
+## Claims
+
+Rules see the token's claims as `r.session`:
+
+| Claim | What it is |
+|---|---|
+| `provider` | The one provider this token works for. The gateway routes by it, so an agent can't reuse a Gmail token on Linear. |
+| `agent` | Which agent is calling. |
+| `onBehalfOf` | The human it acts for, e.g. to allow mail only to themselves. |
+| `intent` | Optional: the task the session was minted for, set by your launcher, not the agent. |
+| `sid` | Session id. Mint a second provider's token with the same `sid` to share one session. |
+| `iat`, `exp` | Issued and expiry times, in seconds. |
+
+Tokens are `as1.<claims>.<signature>`, signed with HMAC-SHA256. A missing, malformed, wrongly signed or expired token gets `401 unauthenticated`.
+
+## User messages
+
+A session store is optional. Without one, tokens are stateless. With one, your trusted front door can record what the human typed, and [checks](/docs/concepts/checks) read it as intent:
+
+```ts
+await sessions.addUserMessage({
+  session: { sid },
+  message: { text: "Reply to Bob and say I'll be late" },
+});
+```
+
+`memoryStore()` keeps the last 50 messages per session in memory: one gateway process, lost on restart. For more, implement `SessionStore` (`addUserMessage`, `getUserMessages`) on your own database.
+
+Only trusted code may write to the store, never the agent. A store that returns agent-written text lets a rogue agent forge the user's intent.

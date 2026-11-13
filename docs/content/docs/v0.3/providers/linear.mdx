@@ -1,0 +1,51 @@
+---
+title: "Linear"
+icon: "linear"
+description: "The Linear provider (GraphQL): actions, rules, harness."
+---
+
+GraphQL. See the [GraphQL limitation](/docs/concepts/actions#graphql-limitation). All actions: [codegen-report.md](https://github.com/waterlockcc/waterlock/blob/main/src/providers/linear/codegen-report.md).
+
+SDK relation calls are nested selections: `issue.comments()` sends `issue(id) { comments }`, so it is `linear.query.issue`, not `linear.query.comments`. Allowing `linear.query.issue` allows reading the issue's comments, attachments and history.
+
+```ts
+import { linear } from "@waterlock/gateway/providers/linear";
+
+linear({ credentials: staticToken({ token: process.env.LINEAR_TOKEN! }) }); // auth: "apiKey" for a personal API key
+
+// rule
+{ when: (r) => r.action === "linear.mutation.issueCreate" && r.params.input.teamId === TEAM_ID }
+
+// harness: stock SDK, gateway as apiUrl, session token as accessToken
+new LinearClient({ accessToken: token, apiUrl: "http://127.0.0.1:8787/graphql" });
+```
+
+Runnable example against a fake Linear with seed data: [examples/ai-sdk-linear-triage](https://github.com/waterlockcc/waterlock/tree/main/examples/ai-sdk-linear-triage).
+
+## Errors
+
+Gateway errors are GraphQL errors with the `extensions` the Linear SDK reads ([`error.ts`](https://github.com/linear/linear/blob/master/packages/sdk/src/error.ts)):
+
+```json
+{
+  "errors": [
+    {
+      "message": "Error for waterlock proxy: Issues only in the agents team.",
+      "extensions": {
+        "type": "forbidden",
+        "userPresentableMessage": "Error for waterlock proxy: Issues only in the agents team.",
+        "code": "policy_denied",
+        "action": "linear.mutation.issueCreate"
+      }
+    }
+  ]
+}
+```
+
+With `@linear/sdk`, a denial throws a `ForbiddenLinearError` (`type` is `LinearErrorType.Forbidden`, `status` is 403) whose message includes the prefixed reason. `extensions.type` follows the status: `forbidden` (403), `invalid input` (400, 404, 405, 413), `network error` (502). `extensions.code` is the gateway's [error code](/docs/concepts/request-flow#errors); `extensions.rules` lists the ids of a matched `deny` rule.
+
+## Demo
+
+An AI SDK agent on a real Linear workspace, through the gateway. Creating the issue and setting its priority are allowed. Moving it to another team is blocked by a TypeScript rule; filing a refund with a card number is blocked by a plain-language check. Linear is queried before and after the run.
+
+<video src="/demo.mp4" poster="/demo-poster.jpg" controls muted playsInline preload="metadata" aria-label="An AI SDK agent works on a real Linear workspace through the waterlock gateway" />

@@ -1,0 +1,99 @@
+---
+title: "Actions"
+description: "How each call maps to an action and params that rules match on."
+---
+
+Every call is one action. Rules match `r.action` and `r.params`.
+
+| Spec | Action | `r.params` |
+|---|---|---|
+| Discovery (Google) | method id: `gmail.users.messages.send` | path + query params |
+| OpenAPI | `<provider>.<operationId>` | path + query params |
+| GraphQL | top-level field: `linear.mutation.issueCreate` | field arguments, schema defaults filled in |
+
+Unknown paths, params, fields and arguments are rejected before policy runs.
+
+## Examples of `r.params`
+
+### REST: path and query params, typed
+
+Listing unread mail in the inbox:
+
+```http
+GET /gmail/v1/users/me/messages?maxResults=10&labelIds=INBOX&labelIds=UNREAD
+```
+
+```ts
+r.action; // "gmail.users.messages.list"
+r.params;
+// {
+//   userId: "me",
+//   maxResults: 10,
+//   labelIds: ["INBOX", "UNREAD"],
+// }
+```
+
+- Path params (`userId`) and query params land in the same object, by name.
+- Values are typed from the spec: `maxResults` is the number `10`, not the string `"10"`.
+- A repeated param (`labelIds`) is an array.
+- The request body is not in `r.params`. Providers decode the parts rules need into `r.context`, e.g. Gmail's `recipients` on `messages.send` (see [Gmail](/docs/providers/gmail)).
+
+### GraphQL: the top-level field's arguments
+
+A Linear priority change, inline:
+
+```graphql
+mutation {
+  issueUpdate(id: "AGT-29", input: { priority: 2 }) {
+    success
+  }
+}
+```
+
+The same call with variables gives the same params. Variables are resolved first:
+
+```graphql
+mutation Update($id: String!, $input: IssueUpdateInput!) {
+  issueUpdate(id: $id, input: $input) {
+    success
+  }
+}
+```
+
+```ts
+r.action; // "linear.mutation.issueUpdate"
+r.params;
+// {
+//   id: "AGT-29",
+//   input: { priority: 2 },
+// }
+```
+
+### In a rule
+
+`r.params` is typed per action, so these autocomplete and typecheck:
+
+```ts
+policy: [
+  // Searches only within the inbox.
+  {
+    when: (r) =>
+      r.action === "gmail.users.messages.list" && r.params.labelIds?.includes("INBOX") === true,
+  },
+  // Issue updates that change the priority and nothing else.
+  {
+    when: (r) =>
+      r.action === "linear.mutation.issueUpdate" &&
+      Object.keys(r.params.input).every((field) => field === "priority"),
+  },
+];
+```
+
+## GraphQL limitation
+
+Only the top-level field is checked, not nested selections.
+
+- Mutations: the selection only shapes the response, so the action covers the write.
+- Queries: an allowed query can read anything reachable from its field, e.g. `issue { team { members { email } } }`. Reads are limited by the upstream token's scopes, not by policy.
+- SDK relation calls can be nested selections too. For example, Linear's `issue.comments()` sends `issue(id) { comments }`, so it is `linear.query.issue`, not `linear.query.comments`. Allowing `linear.query.issue` allows reading the issue's comments, attachments and history.
+- One operation and one top-level field per request. Batches, subscriptions and persisted queries are rejected.
