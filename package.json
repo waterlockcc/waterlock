@@ -2,6 +2,23 @@
   "name": "@waterlock/gateway",
   "version": "0.3.0",
   "description": "Credential-injecting policy gateway for AI agent tool calls",
+  "keywords": [
+    "ai-agent",
+    "ai-agents",
+    "agent-security",
+    "llm-security",
+    "api-gateway",
+    "credentials",
+    "secrets",
+    "policy",
+    "proxy",
+    "mcp",
+    "ai-sdk",
+    "claude",
+    "gmail",
+    "linear",
+    "prompt-injection"
+  ],
   "license": "MIT",
   "type": "module",
   "repository": {
