@@ -72,24 +72,31 @@ async function client(agent = "inbox-assistant") {
 const raw = (headers: string) =>
   Buffer.from(`${headers}\r\nSubject: hi\r\n\r\nbody`).toString("base64url");
 
+const PREFIX = "Error for waterlock proxy: ";
+
+/** What the googleapis client exposes on a denial. */
 async function denied(p: Promise<unknown>): Promise<{
   status: number;
-  code: string;
+  code: number;
   message: string;
-  rules?: string[];
+  reason: string;
 }> {
   try {
     await p;
   } catch (err) {
-    const res = (
-      err as {
-        response?: {
-          status: number;
-          data: { error: { code: string; message: string; rules?: string[] } };
-        };
-      }
-    ).response;
-    if (res) return { status: res.status, ...res.data.error };
+    const e = err as {
+      status: number;
+      code: number;
+      message: string;
+      response?: { data: { error: { errors: { reason: string }[] } } };
+    };
+    if (e.response)
+      return {
+        status: e.status,
+        code: e.code,
+        message: e.message,
+        reason: e.response.data.error.errors[0]!.reason,
+      };
     throw err;
   }
   throw new Error("expected request to be denied");
@@ -121,8 +128,9 @@ describe("gateway with real googleapis client", () => {
     );
     expect(err).toMatchObject({
       status: 403,
-      code: "policy_denied",
-      message: "List at most 50 messages per page.",
+      code: 403,
+      reason: "policyDenied",
+      message: PREFIX + "List at most 50 messages per page.",
     });
     expect(upstream).toHaveLength(0);
   });
@@ -149,8 +157,9 @@ describe("gateway with real googleapis client", () => {
     );
     expect(err).toMatchObject({
       status: 403,
-      code: "policy_denied",
-      message: "Email can only go to acme.com addresses.",
+      code: 403,
+      reason: "policyDenied",
+      message: PREFIX + "Email can only go to acme.com addresses.",
     });
     expect(upstream).toHaveLength(0);
   });
@@ -159,7 +168,10 @@ describe("gateway with real googleapis client", () => {
     const { api } = await client();
     expect(
       await denied(api.users.messages.delete({ userId: "me", id: "m1" })),
-    ).toMatchObject({ status: 403, message: "Deleting mail is not allowed." });
+    ).toMatchObject({
+      status: 403,
+      message: PREFIX + "Deleting mail is not allowed.",
+    });
   });
 
   it("forbidden group: auto-forwarding", async () => {
@@ -172,7 +184,7 @@ describe("gateway with real googleapis client", () => {
     );
     expect(err).toMatchObject({
       status: 403,
-      message: "Changing forwarding settings is not allowed.",
+      message: PREFIX + "Changing forwarding settings is not allowed.",
     });
   });
 
@@ -183,8 +195,9 @@ describe("gateway with real googleapis client", () => {
     );
     expect(err).toMatchObject({
       status: 403,
-      code: "policy_denied",
-      message: "Sending stored drafts is not allowed.",
+      code: 403,
+      reason: "policyDenied",
+      message: PREFIX + "Sending stored drafts is not allowed.",
     });
   });
 
@@ -274,9 +287,32 @@ describe("gateway with hostile raw requests", () => {
       body: "To: x@evil.com\r\n\r\nhi",
     });
     expect(res2.status).toBe(403);
-    expect(
-      ((await res2.json()) as { error: { message: string } }).error.message,
-    ).toMatch(/upload route/);
+    expect(await res2.json()).toEqual({
+      error: {
+        code: 403,
+        message:
+          PREFIX +
+          "upload route for gmail.users.messages.send not supported: body can't be inspected",
+        status: "PERMISSION_DENIED",
+        errors: [
+          {
+            message:
+              PREFIX +
+              "upload route for gmail.users.messages.send not supported: body can't be inspected",
+            domain: "waterlock.cc",
+            reason: "policyDenied",
+          },
+        ],
+        details: [
+          {
+            "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+            reason: "POLICY_DENIED",
+            domain: "waterlock.cc",
+            metadata: { action: "gmail.users.messages.send" },
+          },
+        ],
+      },
+    });
   });
 
   it("batch endpoint is unknown -> 404", async () => {

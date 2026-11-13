@@ -7,7 +7,11 @@ import {
   type PolicyRule,
 } from "./policy.js";
 import type { Credential } from "./credentials.js";
-import type { ProviderDefinition, RequestOf } from "./provider.js";
+import type {
+  GatewayError,
+  ProviderDefinition,
+  RequestOf,
+} from "./provider.js";
 import type { SessionClaims, Sessions } from "./session.js";
 
 export interface GatewayOptions<P extends readonly ProviderDefinition[]> {
@@ -90,37 +94,51 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
     // 1. Authenticate. The signed token names the provider; the agent can't
     //    pick another.
     const auth = await authenticate(req, opts.sessions);
+    // Until the token is verified the provider is unknown, so these two use
+    // the generic REST body.
     if ("error" in auth) {
-      return failRest(
-        401,
-        "unauthenticated",
-        "missing or invalid session token",
+      return restError(
+        gatewayError(
+          401,
+          "unauthenticated",
+          "missing or invalid session token",
+        ),
       );
     }
     const session = auth.claims;
     const entry = providers.get(session.provider);
     if (!entry)
-      return failRest(
-        403,
-        "unknown_provider",
-        `this gateway has no provider "${session.provider}"`,
+      return restError(
+        gatewayError(
+          403,
+          "unknown_provider",
+          `this gateway has no provider "${session.provider}"`,
+        ),
       );
     // The upstream host is fixed by config; the path is forwarded as-is.
     const upstreamPath = url.pathname;
-
-    const override = METHOD_OVERRIDE_HEADERS.find((h) => req.headers.has(h));
-    if (override)
-      return failRest(400, "bad_request", `header ${override} not allowed`);
-
-    // 2. Match: the GraphQL endpoint on the body, everything else against the
-    //    REST operation table.
     const gql =
       entry.def.graphql && upstreamPath === entry.def.graphql.endpoint
         ? entry.def.graphql
         : undefined;
-    const fail = gql ? failGraphql : failRest;
+    // From here on, errors use the provider's own shape when it has one.
+    const format = entry.def.formatError ?? (gql ? graphqlError : restError);
+    const fail = (
+      status: number,
+      code: string,
+      reason: string,
+      action?: string,
+      rules?: string[],
+    ) => format(gatewayError(status, code, reason, action, rules));
     const deny = (action: string, rules: string[], reason: string) =>
       fail(403, "policy_denied", reason, action, rules);
+
+    const override = METHOD_OVERRIDE_HEADERS.find((h) => req.headers.has(h));
+    if (override)
+      return fail(400, "bad_request", `header ${override} not allowed`);
+
+    // 2. Match: the GraphQL endpoint on the body, everything else against the
+    //    REST operation table.
     let action: string;
     let params: Record<string, unknown>;
     let context: object = {};
@@ -311,49 +329,37 @@ function bearer({
   headers.set("authorization", `Bearer ${credential.token}`);
 }
 
-function failRest(
+const ERROR_PREFIX = "Error for waterlock proxy: ";
+
+function gatewayError(
   status: number,
   code: string,
-  message: string,
+  reason: string,
   action?: string,
   rules?: string[],
-): Response {
-  return Response.json(
-    { error: errorFields(code, message, action, rules) },
-    { status },
-  );
+): GatewayError {
+  return {
+    status,
+    code,
+    message: ERROR_PREFIX + reason,
+    ...(action ? { action } : {}),
+    ...(rules?.length ? { rules } : {}),
+  };
+}
+
+/** `{ error: { code, message, action?, rules? } }`. */
+function restError({ status, ...error }: GatewayError): Response {
+  return Response.json({ error }, { status });
 }
 
 /**
  * GraphQL-style body, so GraphQL clients surface the message:
  * `{ errors: [{ message, extensions: { code, ... } }] }`.
  */
-function failGraphql(
-  status: number,
-  code: string,
-  message: string,
-  action?: string,
-  rules?: string[],
-): Response {
-  const { message: _, ...extensions } = errorFields(
-    code,
-    message,
-    action,
-    rules,
-  );
+function graphqlError({
+  status,
+  message,
+  ...extensions
+}: GatewayError): Response {
   return Response.json({ errors: [{ message, extensions }] }, { status });
-}
-
-function errorFields(
-  code: string,
-  message: string,
-  action?: string,
-  rules?: string[],
-) {
-  return {
-    code,
-    message,
-    ...(action ? { action } : {}),
-    ...(rules?.length ? { rules } : {}),
-  };
 }

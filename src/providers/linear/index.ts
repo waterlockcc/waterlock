@@ -3,6 +3,7 @@ import type { ProviderRequest } from "../../core/policy.js";
 import { createProvider } from "../../core/provider.js";
 import { buildSchema, type GraphQLSchema } from "graphql";
 import { createGraphqlMatcher } from "../../graphql/index.js";
+import { linearError } from "./errors.js";
 import {
   linearSdl,
   type LinearAction,
@@ -50,6 +51,7 @@ export function linear(opts: {
       }),
     },
     credentials: opts.credentials,
+    formatError: linearError,
     ...(opts.auth === "apiKey"
       ? {
           inject: ({ headers, credential }) =>

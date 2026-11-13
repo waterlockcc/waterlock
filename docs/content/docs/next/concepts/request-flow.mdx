@@ -13,7 +13,11 @@ Every call goes through the same steps. Any step can stop it.
 
 ## Errors
 
-REST providers answer with `{ error: { code, message, action?, rules? } }`. GraphQL providers use GraphQL's shape, so clients surface the message: `{ errors: [{ message, extensions: { code, action?, rules? } }] }`.
+Every error message starts with `Error for waterlock proxy: `, followed by the reason. The agent can tell the gateway refused the call, not the provider, and won't treat it as an outage to retry.
+
+Built-in providers answer in the shape their official SDK parses, so a denial surfaces like any other error from that SDK. See [Gmail](/docs/providers/gmail#errors) and [Linear](/docs/providers/linear#errors).
+
+Other providers get a generic body. REST: `{ error: { code, message, action?, rules? } }`. On a GraphQL endpoint, GraphQL's shape, so clients surface the message: `{ errors: [{ message, extensions: { code, action?, rules? } }] }`. `unauthenticated` and `unknown_provider` happen before the gateway knows the provider, so they always use the generic REST body.
 
 | Status | `code` | When |
 |---|---|---|
@@ -25,3 +29,18 @@ REST providers answer with `{ error: { code, message, action?, rules? } }`. Grap
 | 403 | `unknown_provider` | The token's provider isn't on this gateway. |
 | 502 | `upstream_auth` | The credential source failed. |
 | 502 | `upstream_unreachable` | The provider couldn't be reached. |
+
+### Custom providers
+
+Set `formatError` to answer in your provider's own shape. It gets the status, the code from the table above, the prefixed message and, for denials, the action and rule ids.
+
+```ts
+import { createProvider, type GatewayError } from "@waterlock/gateway";
+
+createProvider<AcmeRequest>({
+  id: "acme",
+  // ...
+  formatError: (e: GatewayError) =>
+    Response.json({ code: e.status, message: e.message }, { status: e.status }),
+});
+```
