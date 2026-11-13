@@ -94,7 +94,7 @@ export default async function Home() {
             your agent never sees the key
           </h1>
           <div>
-            <p className="label opacity-80">/ Open source · MIT</p>
+            <h2 className="label opacity-80">/ Open-source policy gateway for AI agents · MIT</h2>
             <p className="mt-4 max-w-xl text-lg leading-7 font-medium">{pitch}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <CopyCommand />
