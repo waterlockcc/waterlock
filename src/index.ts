@@ -47,6 +47,8 @@ export type {
   Routed,
   Router,
 } from "./core/router.js";
+export { restRouter, restError } from "./core/routers/rest.js";
+export { graphqlRouter, graphqlError } from "./core/routers/graphql.js";
 export { createMatcher, type Matcher, type MatchResult } from "./core/match.js";
 export type {
   HttpMethod,

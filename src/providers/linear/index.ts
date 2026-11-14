@@ -1,6 +1,7 @@
 import type { CredentialSource } from "../../core/credentials.js";
 import type { ProviderRequest } from "../../core/policy.js";
 import { createProvider } from "../../core/provider.js";
+import { graphqlRouter } from "../../core/routers/graphql.js";
 import { buildSchema, type GraphQLSchema } from "graphql";
 import { createGraphqlMatcher } from "../../graphql/index.js";
 import { linearError } from "./errors.js";
@@ -43,13 +44,14 @@ export function linear(opts: {
   return createProvider<LinearRequest>({
     id: "linear",
     upstream: opts.upstream ?? "https://api.linear.app",
-    graphql: {
+    router: graphqlRouter({
+      provider: "linear",
       endpoint: "/graphql",
       matcher: createGraphqlMatcher({
         provider: "linear",
         schema: (schema ??= buildSchema(linearSdl)),
       }),
-    },
+    }),
     credentials: opts.credentials,
     formatError: linearError,
     ...(opts.auth === "apiKey"

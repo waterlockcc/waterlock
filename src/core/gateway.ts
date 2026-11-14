@@ -9,9 +9,8 @@ import {
 } from "./policy.js";
 import type { Credential } from "./credentials.js";
 import type { ProviderDefinition, RequestOf } from "./provider.js";
-import type { RouteResult, Router } from "./router.js";
-import { graphqlRouter } from "./routers/graphql.js";
-import { restError, restRouter } from "./routers/rest.js";
+import type { RouteResult } from "./router.js";
+import { restError } from "./routers/rest.js";
 import type { SessionClaims, Sessions } from "./session.js";
 
 export interface GatewayOptions<P extends readonly ProviderDefinition[]> {
@@ -73,9 +72,9 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
   const ids = opts.providers.map((p) => p.id);
   const dup = ids.find((id, i) => ids.indexOf(id) !== i);
   if (dup) throw new Error(`provider "${dup}" is configured twice`);
-  const providers = new Map(
-    opts.providers.map((p) => [p.id, { def: p, routerFor: routing(p) }]),
-  );
+  const missing = opts.providers.find((p) => !p.router);
+  if (missing) throw new Error(`provider "${missing.id}" has no router`);
+  const providers = new Map(opts.providers.map((p) => [p.id, p]));
 
   async function handle(req: Request): Promise<Response> {
     const url = new URL(req.url);
@@ -98,8 +97,8 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
       return restError(error);
     }
     const session = auth.claims;
-    const entry = providers.get(session.provider);
-    if (!entry)
+    const provider = providers.get(session.provider);
+    if (!provider)
       return restError(
         gatewayError(
           403,
@@ -110,8 +109,8 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
 
     // From here on, errors use the provider's own shape when it has one,
     // else the protocol's.
-    const router = entry.routerFor(url.pathname);
-    let format = entry.def.formatError ?? router?.formatError ?? restError;
+    const { router } = provider;
+    let format = provider.formatError ?? router.formatError;
     const fail = (
       status: number,
       code: string,
@@ -120,12 +119,6 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
       rules?: string[],
     ) => format(gatewayError(status, code, reason, action, rules));
 
-    if (!router)
-      return fail(
-        404,
-        "policy_denied",
-        `no ${entry.def.id} operation matches path`,
-      );
     const override = METHOD_OVERRIDE_HEADERS.find((h) => req.headers.has(h));
     if (override)
       return fail(400, "bad_request", `header ${override} not allowed`);
@@ -161,7 +154,7 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
     // Built by the provider's own router, so it matches that provider's
     // request type.
     const policyReq = {
-      provider: entry.def.id,
+      provider: provider.id,
       action,
       params,
       context,
@@ -205,7 +198,7 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
       headers.set(h, v);
     let credential: Credential;
     try {
-      credential = await entry.def.credentials({ session });
+      credential = await provider.credentials({ session });
     } catch {
       await drain(routed.body);
       return fail(
@@ -215,10 +208,10 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
         action,
       );
     }
-    (entry.def.inject ?? bearer)({ headers, credential });
+    (provider.inject ?? bearer)({ headers, credential });
 
     const upstreamUrl =
-      entry.def.upstream.replace(/\/$/, "") + url.pathname + url.search;
+      provider.upstream.replace(/\/$/, "") + url.pathname + url.search;
     const stream = routed.body instanceof ReadableStream;
     let upstream: Response;
     try {
@@ -249,39 +242,6 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
   }
 
   return { fetch: handle };
-}
-
-/**
- * Which router handles a path. A custom router takes every request; otherwise
- * the GraphQL endpoint goes to GraphQL and everything else to the REST table.
- * Undefined: nothing in this provider matches the path.
- */
-function routing(
-  def: ProviderDefinition,
-): (path: string) => Router | undefined {
-  if (def.router) {
-    const router = def.router;
-    return () => router;
-  }
-  if (!def.table && !def.graphql)
-    throw new Error(
-      `provider "${def.id}" has no REST table, GraphQL endpoint or router`,
-    );
-  const rest =
-    def.table &&
-    restRouter({
-      table: def.table,
-      ...(def.allowedGlobalQueryParams
-        ? { allowedGlobalQueryParams: def.allowedGlobalQueryParams }
-        : {}),
-      ...(def.decoders ? { decoders: def.decoders } : {}),
-    });
-  const graphql = def.graphql && {
-    endpoint: def.graphql.endpoint,
-    router: graphqlRouter({ matcher: def.graphql.matcher }),
-  };
-  return (path) =>
-    graphql && path === graphql.endpoint ? graphql.router : rest;
 }
 
 /**

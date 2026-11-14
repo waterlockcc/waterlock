@@ -8,11 +8,24 @@ import type { GraphqlMatcher } from "../types.js";
  * the action; the parsed document is re-printed and forwarded, so upstream
  * runs exactly what was checked.
  */
-export function graphqlRouter(opts: { matcher: GraphqlMatcher }): Router {
+export function graphqlRouter(opts: {
+  /** Provider id, for error messages. */
+  provider: string;
+  /** e.g. `/graphql`. Any other path is refused. */
+  endpoint: string;
+  /** Build with `createGraphqlMatcher` from `@waterlock/gateway/graphql`. */
+  matcher: GraphqlMatcher;
+}): Router {
   return {
     formatError: graphqlError,
 
     async route({ method, url, headers, body, maxBodyBytes }) {
+      if (url.pathname !== opts.endpoint)
+        return {
+          ok: false,
+          status: 404,
+          reason: `no ${opts.provider} operation matches path`,
+        };
       if (method !== "POST")
         return {
           ok: false,
