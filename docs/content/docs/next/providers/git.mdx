@@ -29,6 +29,20 @@ Upstream gets `Authorization: Basic <username>:<token>`. `username` defaults to 
 
 `r.params.repo` is the path as the agent sent it. GitHub and GitLab resolve `Acme/App` and `acme/app` to the same repo, so compare it lowercased: `r.params.repo.toLowerCase() === "acme/app"`. Compared as-is, an allow rule refuses `Acme/App`, and a deny rule lets it through.
 
+## How git talks to the gateway
+
+Every `git` command that talks to a remote makes two kinds of HTTP request, and each one is checked on its own:
+
+1. **Advertise.** git asks which branches and tags the repo has (`GET <repo>/info/refs`). Nothing is changed or downloaded yet.
+2. **RPC.** git does the work in a `POST` (a fetch may send several). On a fetch, it names the commits it wants and the server sends them. On a push, it lists each ref to change (`refs/heads/agent/fix`: old commit to new commit), then uploads the new commits.
+
+| Command | Requests | Action |
+|---|---|---|
+| `git clone`, `fetch`, `pull`, `ls-remote` | advertise, then RPC | `git.fetch` |
+| `git push` | advertise, then RPC | `git.push` |
+
+A ref is the full name of a branch or tag: branch `main` is `refs/heads/main`, tag `v1` is `refs/tags/v1`. Only the push RPC says which refs change, so ref rules check `r.context.phase === "rpc"`. A fetch can't be limited by branch: an agent that can read a repo can read all of it.
+
 ## Actions
 
 | Request | Action | `r.context` |
