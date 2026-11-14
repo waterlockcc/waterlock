@@ -164,10 +164,19 @@ describe("git provider: fetch", () => {
     expect(up.seen).toHaveLength(0);
   });
 
-  it("repo case is normalized: ACME/App is acme/app, ACME/Secret still denied", async () => {
-    ok((await clone("ACME/App")).r);
+  it("rules see the repo lowercased: ACME/App passes as acme/app, ACME/Secret is denied", async () => {
+    // Whether upstream resolves ACME/App depends on the host (here, on the
+    // filesystem), so only the gateway's decision is checked: forwarded
+    // as-is, or refused before upstream.
+    up.seen.length = 0;
+    await clone("ACME/App");
+    expect(up.seen[0]?.path).toBe(
+      "/ACME/App.git/info/refs?service=git-upload-pack",
+    );
+    up.seen.length = 0;
     const { r } = await clone("ACME/Secret");
-    expect(r.code).not.toBe(0);
+    expect(r.stderr).toContain(`remote: ${PREFIX}no allow rule matched`);
+    expect(up.seen).toHaveLength(0);
   });
 
   it("session token as the Basic auth password (credential helper style)", async () => {
