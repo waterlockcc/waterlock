@@ -20,6 +20,7 @@ Errors are handled per provider. Each provider answers in the shape its official
 
 - [Gmail](/docs/providers/gmail#errors): Google's error format.
 - [Linear](/docs/providers/linear#errors): GraphQL errors with Linear's `extensions`.
+- [Git](/docs/providers/git#errors): plain text git prints as `remote:` lines, and `[remote rejected]` per ref for a denied push.
 
 A generic body is the fallback, decided case by case: for a provider whose SDK has no error format to match, and for [custom providers](#custom-providers) that don't set one. REST: `{ error: { code, message, action?, rules? } }`. On a GraphQL endpoint, GraphQL's shape, so clients still surface the message: `{ errors: [{ message, extensions: { code, action?, rules? } }] }`. `unauthenticated` and `unknown_provider` happen before the gateway knows the provider, so they use the generic REST body. The exception is a router that recognizes the path and answers `unauthenticated` itself.
 

@@ -34,7 +34,7 @@ export async function drain(body: unknown): Promise<void> {
 export function concat(
   chunks: readonly Uint8Array[],
   size = chunks.reduce((n, c) => n + c.length, 0),
-): Uint8Array {
+): Uint8Array<ArrayBuffer> {
   const out = new Uint8Array(size);
   let off = 0;
   for (const c of chunks) {
