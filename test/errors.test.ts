@@ -3,6 +3,7 @@ import {
   createGateway,
   createProvider,
   createSessions,
+  restRouter,
   staticToken,
   type GatewayError,
   type ProviderRequest,
@@ -35,7 +36,7 @@ async function setup(formatError?: (e: GatewayError) => Response) {
       createProvider<ProviderRequest<"acme", "acme.items.delete">>({
         id: "acme",
         upstream: up.url,
-        table,
+        router: restRouter({ table }),
         credentials: staticToken({ token: "acme-secret" }),
         ...(formatError ? { formatError } : {}),
       }),

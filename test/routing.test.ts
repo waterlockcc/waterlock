@@ -3,6 +3,7 @@ import {
   createGateway,
   createProvider,
   createSessions,
+  restRouter,
   staticToken,
   type ProviderRequest,
 } from "../src/index.js";
@@ -33,8 +34,7 @@ const provider = (id: string, upstream = `https://${id}.example`) =>
   createProvider<ProviderRequest<string, `${string}.graphql`>>({
     id,
     upstream,
-    table: graphql(id),
-    allowedGlobalQueryParams: [],
+    router: restRouter({ table: graphql(id) }),
     credentials: staticToken({ token: `${id}-secret` }),
   });
 

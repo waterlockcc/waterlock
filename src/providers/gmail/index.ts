@@ -1,6 +1,7 @@
 import type { CredentialSource } from "../../core/credentials.js";
 import type { ProviderRequest } from "../../core/policy.js";
 import { createProvider } from "../../core/provider.js";
+import { restRouter } from "../../core/routers/rest.js";
 import {
   decodeDraftSend,
   decodeDraftWrite,
@@ -50,22 +51,25 @@ export function gmail(opts: {
   return createProvider<GmailRequest>({
     id: "gmail",
     upstream: opts.upstream ?? "https://gmail.googleapis.com",
-    table: gmailTable,
-    // Google system params. Excluded on purpose: key, access_token, oauth_token
-    // (credentials in the URL), callback (JSONP), uploadType/upload_protocol.
-    allowedGlobalQueryParams: [
-      "alt",
-      "fields",
-      "prettyPrint",
-      "quotaUser",
-      "$.xgafv",
-    ],
-    decoders: {
-      "gmail.users.messages.send": ({ body }) => decodeMessageSend(body),
-      "gmail.users.drafts.create": ({ body }) => decodeDraftWrite(body),
-      "gmail.users.drafts.update": ({ body }) => decodeDraftWrite(body),
-      "gmail.users.drafts.send": ({ body }) => decodeDraftSend(body),
-    },
+    router: restRouter({
+      table: gmailTable,
+      // Google system params. Excluded on purpose: key, access_token,
+      // oauth_token (credentials in the URL), callback (JSONP),
+      // uploadType/upload_protocol.
+      allowedGlobalQueryParams: [
+        "alt",
+        "fields",
+        "prettyPrint",
+        "quotaUser",
+        "$.xgafv",
+      ],
+      decoders: {
+        "gmail.users.messages.send": ({ body }) => decodeMessageSend(body),
+        "gmail.users.drafts.create": ({ body }) => decodeDraftWrite(body),
+        "gmail.users.drafts.update": ({ body }) => decodeDraftWrite(body),
+        "gmail.users.drafts.send": ({ body }) => decodeDraftSend(body),
+      },
+    }),
     credentials: opts.credentials,
     formatError: googleError,
   });

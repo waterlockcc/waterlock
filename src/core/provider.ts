@@ -1,6 +1,6 @@
 import type { Credential, CredentialSource } from "./credentials.js";
 import type { AnyRequest } from "./policy.js";
-import type { GraphqlMatcher, OperationTable } from "./types.js";
+import type { Router } from "./router.js";
 
 /**
  * Extracts policy-relevant fields from a request body. Throwing denies the
@@ -38,32 +38,17 @@ export interface ProviderDefinition<R extends AnyRequest = AnyRequest> {
   /** Fixed upstream origin. The harness can never choose the host. */
   upstream: string;
   /**
-   * REST operations, matched on method + path. Omit for GraphQL-only providers.
+   * Turns requests into actions for policy: `restRouter` (an operation table),
+   * `graphqlRouter` (one GraphQL endpoint), or your own for other protocols.
    */
-  table?: OperationTable;
-  /**
-   * Spec-level query params (e.g. Google's `fields`, `alt`) allowed on every
-   * call. Anything else unlisted is denied.
-   */
-  allowedGlobalQueryParams?: readonly string[];
-  /**
-   * GraphQL endpoint (e.g. `/graphql`). Requests to it are matched on the body:
-   * the top-level field is the action. Build `matcher` with
-   * `createGraphqlMatcher` from `@waterlock/gateway/graphql`.
-   */
-  graphql?: { endpoint: string; matcher: GraphqlMatcher };
-  /**
-   * Per-action body decoders (REST only). Only run on the standard route;
-   * upload variants of decoded actions are denied.
-   */
-  decoders?: Partial<Record<string, Decoder>>;
+  router: Router;
   credentials: CredentialSource;
   /** Default: `Authorization: Bearer <token>`. */
   inject?: (input: { headers: Headers; credential: Credential }) => void;
   /**
    * Writes gateway errors in the shape the provider's own SDK parses, so its
-   * usual error class, code and message come through. Default: the generic
-   * REST body, or the GraphQL one on the GraphQL endpoint.
+   * usual error class, code and message come through. Default: the router's
+   * (generic REST or GraphQL body).
    */
   formatError?: (error: GatewayError) => Response;
   /** Type-only marker, never set at runtime. */

@@ -39,6 +39,16 @@ export {
   type ProviderDefinition,
   type RequestOf,
 } from "./core/provider.js";
+export type {
+  ForwardBody,
+  RouteFailure,
+  RouteInput,
+  RouteResult,
+  Routed,
+  Router,
+} from "./core/router.js";
+export { restRouter, restError } from "./core/routers/rest.js";
+export { graphqlRouter, graphqlError } from "./core/routers/graphql.js";
 export { createMatcher, type Matcher, type MatchResult } from "./core/match.js";
 export type {
   HttpMethod,

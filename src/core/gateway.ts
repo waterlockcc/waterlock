@@ -1,4 +1,5 @@
-import { createMatcher, type MatchResult } from "./match.js";
+import { drain } from "./body.js";
+import { gatewayError } from "./errors.js";
 import { evaluatePolicy, type Check, type Decision } from "./evaluate.js";
 import {
   definePolicy,
@@ -7,11 +8,9 @@ import {
   type PolicyRule,
 } from "./policy.js";
 import type { Credential } from "./credentials.js";
-import type {
-  GatewayError,
-  ProviderDefinition,
-  RequestOf,
-} from "./provider.js";
+import type { ProviderDefinition, RequestOf } from "./provider.js";
+import type { RouteResult } from "./router.js";
+import { restError } from "./routers/rest.js";
 import type { SessionClaims, Sessions } from "./session.js";
 
 export interface GatewayOptions<P extends readonly ProviderDefinition[]> {
@@ -34,8 +33,8 @@ export interface GatewayOptions<P extends readonly ProviderDefinition[]> {
 }
 
 /**
- * Only these request headers reach upstream. Everything else (cookies, method
- * overrides, the session token) is dropped.
+ * Only these request headers reach upstream, plus any a router adds.
+ * Everything else (cookies, method overrides, the session token) is dropped.
  */
 const FORWARD_REQUEST_HEADERS = [
   "accept",
@@ -73,20 +72,9 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
   const ids = opts.providers.map((p) => p.id);
   const dup = ids.find((id, i) => ids.indexOf(id) !== i);
   if (dup) throw new Error(`provider "${dup}" is configured twice`);
-  const providers = new Map(
-    opts.providers.map((p) => {
-      if (!p.table && !p.graphql)
-        throw new Error(
-          `provider "${p.id}" has neither a REST table nor a GraphQL endpoint`,
-        );
-      const matcher =
-        p.table &&
-        createMatcher(p.table, {
-          allowedGlobalQueryParams: p.allowedGlobalQueryParams ?? [],
-        });
-      return [p.id, { def: p, matcher }];
-    }),
-  );
+  const missing = opts.providers.find((p) => !p.router);
+  if (missing) throw new Error(`provider "${missing.id}" has no router`);
+  const providers = new Map(opts.providers.map((p) => [p.id, p]));
 
   async function handle(req: Request): Promise<Response> {
     const url = new URL(req.url);
@@ -95,19 +83,22 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
     //    pick another.
     const auth = await authenticate(req, opts.sessions);
     // Until the token is verified the provider is unknown, so these two use
-    // the generic REST body.
+    // the generic REST body, unless a router recognizes the path.
     if ("error" in auth) {
-      return restError(
-        gatewayError(
-          401,
-          "unauthenticated",
-          "missing or invalid session token",
-        ),
+      const error = gatewayError(
+        401,
+        "unauthenticated",
+        "missing or invalid session token",
       );
+      for (const p of opts.providers) {
+        const res = p.router?.unauthenticated?.(url, error);
+        if (res) return res;
+      }
+      return restError(error);
     }
     const session = auth.claims;
-    const entry = providers.get(session.provider);
-    if (!entry)
+    const provider = providers.get(session.provider);
+    if (!provider)
       return restError(
         gatewayError(
           403,
@@ -115,14 +106,11 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
           `this gateway has no provider "${session.provider}"`,
         ),
       );
-    // The upstream host is fixed by config; the path is forwarded as-is.
-    const upstreamPath = url.pathname;
-    const gql =
-      entry.def.graphql && upstreamPath === entry.def.graphql.endpoint
-        ? entry.def.graphql
-        : undefined;
-    // From here on, errors use the provider's own shape when it has one.
-    const format = entry.def.formatError ?? (gql ? graphqlError : restError);
+
+    // From here on, errors use the provider's own shape when it has one,
+    // else the protocol's.
+    const { router } = provider;
+    let format = provider.formatError ?? router.formatError;
     const fail = (
       status: number,
       code: string,
@@ -130,94 +118,50 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
       action?: string,
       rules?: string[],
     ) => format(gatewayError(status, code, reason, action, rules));
-    const deny = (action: string, rules: string[], reason: string) =>
-      fail(403, "policy_denied", reason, action, rules);
 
     const override = METHOD_OVERRIDE_HEADERS.find((h) => req.headers.has(h));
     if (override)
       return fail(400, "bad_request", `header ${override} not allowed`);
 
-    // 2. Match: the GraphQL endpoint on the body, everything else against the
-    //    REST operation table.
-    let action: string;
-    let params: Record<string, unknown>;
-    let context: object = {};
-    let forwardBody: Uint8Array | string;
-    const contentType = req.headers.get("content-type");
-
-    if (gql) {
-      if (method !== "POST")
-        return fail(405, "policy_denied", "GraphQL requests must be POST");
-      if (url.search)
-        return fail(
-          400,
-          "policy_denied",
-          "query string not allowed on the GraphQL endpoint",
-        );
-      if (!/^application\/json\s*(;|$)/i.test(contentType ?? ""))
-        return fail(
-          400,
-          "bad_request",
-          "content-type must be application/json",
-        );
-      const body = await readBody(req, maxBody);
-      if (body === "too_large")
-        return fail(413, "bad_request", "body too large");
-      const matched = gql.matcher.match(body);
-      if (!matched.ok)
-        return fail(matched.status, "policy_denied", matched.reason);
-      ({ action, params } = matched);
-      forwardBody = matched.body;
-    } else {
-      if (!entry.matcher)
-        return fail(
-          404,
-          "policy_denied",
-          `no ${entry.def.id} operation matches path`,
-        );
-      const matched: MatchResult = entry.matcher.match(
+    // 2. Route: the provider's protocol turns the request into an action,
+    //    params and context, and says what to forward.
+    let routed: RouteResult;
+    try {
+      routed = await router.route({
         method,
-        upstreamPath,
-        url.searchParams,
+        url,
+        headers: req.headers,
+        body: req.body,
+        maxBodyBytes: maxBody,
+      });
+    } catch (err) {
+      return fail(
+        400,
+        "bad_request",
+        `could not read request: ${err instanceof Error ? err.message : String(err)}`,
       );
-      if (!matched.ok)
-        return fail(matched.status, "policy_denied", matched.reason);
-      const { op } = matched;
-      action = op.action;
-      params = matched.params;
-
-      // 3. Read body once: decode it for policy, forward the same bytes.
-      const body = await readBody(req, maxBody);
-      if (body === "too_large")
-        return fail(413, "bad_request", "body too large");
-      forwardBody = body;
-
-      const decoder = entry.def.decoders?.[op.action];
-      if (decoder) {
-        if (op.variant !== "standard") {
-          const reason = `${op.variant} route for ${op.action} not supported: body can't be inspected`;
-          return deny(op.action, [], reason);
-        }
-        try {
-          context = await decoder({ body, contentType });
-        } catch (err) {
-          const reason = `could not decode request body: ${err instanceof Error ? err.message : String(err)}`;
-          return deny(op.action, [], reason);
-        }
-      }
     }
+    if (!routed.ok)
+      return fail(
+        routed.status,
+        routed.code ?? "policy_denied",
+        routed.reason,
+        routed.action,
+      );
+    if (routed.formatError) format = routed.formatError;
+    const { action, params, context } = routed;
 
-    // Built from the provider's own table and decoder, so it matches that
-    // provider's request type.
+    // Built by the provider's own router, so it matches that provider's
+    // request type.
     const policyReq = {
-      provider: entry.def.id,
+      provider: provider.id,
       action,
       params,
       context,
       session,
     } satisfies AnyRequest as RequestOf<P>;
 
-    // 4. Policy.
+    // 3. Policy.
     const decision: Decision = await evaluatePolicy(policy, policyReq, {
       ...(opts.check
         ? {
@@ -231,20 +175,32 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
       ...(opts.checkTimeoutMs ? { checkTimeoutMs: opts.checkTimeoutMs } : {}),
     });
     if (decision.effect === "deny") {
-      return deny(action, decision.rules, decision.reason);
+      await drain(routed.body);
+      return fail(
+        403,
+        "policy_denied",
+        decision.reason,
+        action,
+        decision.rules,
+      );
     }
 
-    // 5. Forward with the real credential.
+    // 4. Forward with the real credential.
     const headers = new Headers();
-    for (const h of FORWARD_REQUEST_HEADERS) {
+    for (const h of [
+      ...FORWARD_REQUEST_HEADERS,
+      ...(routed.forwardHeaders ?? []),
+    ]) {
       const v = req.headers.get(h);
       if (v !== null) headers.set(h, v);
     }
-    if (gql) headers.set("content-type", "application/json");
+    for (const [h, v] of Object.entries(routed.setHeaders ?? {}))
+      headers.set(h, v);
     let credential: Credential;
     try {
-      credential = await entry.def.credentials({ session });
+      credential = await provider.credentials({ session });
     } catch {
+      await drain(routed.body);
       return fail(
         502,
         "upstream_auth",
@@ -252,22 +208,23 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
         action,
       );
     }
-    (entry.def.inject ?? bearer)({ headers, credential });
+    (provider.inject ?? bearer)({ headers, credential });
 
     const upstreamUrl =
-      entry.def.upstream.replace(/\/$/, "") + upstreamPath + url.search;
+      provider.upstream.replace(/\/$/, "") + url.pathname + url.search;
+    const stream = routed.body instanceof ReadableStream;
     let upstream: Response;
     try {
       upstream = await fetch(upstreamUrl, {
         method,
         headers,
-        body:
-          forwardBody.length > 0 && method !== "GET"
-            ? (forwardBody as BodyInit)
-            : undefined,
+        body: routed.body ?? undefined,
         redirect: "manual",
-      });
+        // Node requires this to send a stream as the body.
+        ...(stream ? { duplex: "half" } : {}),
+      } as RequestInit);
     } catch {
+      await drain(routed.body);
       return fail(
         502,
         "upstream_unreachable",
@@ -287,36 +244,29 @@ export function createGateway<const P extends readonly ProviderDefinition[]>(
   return { fetch: handle };
 }
 
+/**
+ * The session token, as `Authorization: Bearer <token>` or as the password of
+ * Basic auth (for clients like git that only speak Basic).
+ */
 async function authenticate(
   req: Request,
   sessions: Sessions,
 ): Promise<{ claims: SessionClaims } | { error: string }> {
-  const header = req.headers.get("authorization");
-  const token = header?.match(/^Bearer (\S+)$/i)?.[1];
+  const header = req.headers.get("authorization") ?? "";
+  const bearer = header.match(/^Bearer (\S+)$/i)?.[1];
+  const basic = header.match(/^Basic ([A-Za-z0-9+/]+={0,2})$/i)?.[1];
+  let token = bearer;
+  if (!token && basic) {
+    let decoded: string;
+    try {
+      decoded = atob(basic);
+    } catch {
+      return { error: "malformed" };
+    }
+    const colon = decoded.indexOf(":");
+    token = colon === -1 ? undefined : decoded.slice(colon + 1);
+  }
   return token ? sessions.verify({ token }) : { error: "missing" };
-}
-
-async function readBody(
-  req: Request,
-  max: number,
-): Promise<Uint8Array | "too_large"> {
-  const declared = Number(req.headers.get("content-length") ?? 0);
-  if (declared > max) return "too_large";
-  if (!req.body) return new Uint8Array();
-  const chunks: Uint8Array[] = [];
-  let size = 0;
-  for await (const chunk of req.body as unknown as AsyncIterable<Uint8Array>) {
-    size += chunk.length;
-    if (size > max) return "too_large";
-    chunks.push(chunk);
-  }
-  const out = new Uint8Array(size);
-  let off = 0;
-  for (const c of chunks) {
-    out.set(c, off);
-    off += c.length;
-  }
-  return out;
 }
 
 function bearer({
@@ -327,39 +277,4 @@ function bearer({
   credential: Credential;
 }): void {
   headers.set("authorization", `Bearer ${credential.token}`);
-}
-
-const ERROR_PREFIX = "Error for waterlock proxy: ";
-
-function gatewayError(
-  status: number,
-  code: string,
-  reason: string,
-  action?: string,
-  rules?: string[],
-): GatewayError {
-  return {
-    status,
-    code,
-    message: ERROR_PREFIX + reason,
-    ...(action ? { action } : {}),
-    ...(rules?.length ? { rules } : {}),
-  };
-}
-
-/** `{ error: { code, message, action?, rules? } }`. */
-function restError({ status, ...error }: GatewayError): Response {
-  return Response.json({ error }, { status });
-}
-
-/**
- * GraphQL-style body, so GraphQL clients surface the message:
- * `{ errors: [{ message, extensions: { code, ... } }] }`.
- */
-function graphqlError({
-  status,
-  message,
-  ...extensions
-}: GatewayError): Response {
-  return Response.json({ errors: [{ message, extensions }] }, { status });
 }
