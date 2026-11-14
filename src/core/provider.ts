@@ -1,5 +1,6 @@
 import type { Credential, CredentialSource } from "./credentials.js";
 import type { AnyRequest } from "./policy.js";
+import type { Router } from "./router.js";
 import type { GraphqlMatcher, OperationTable } from "./types.js";
 
 /**
@@ -52,6 +53,12 @@ export interface ProviderDefinition<R extends AnyRequest = AnyRequest> {
    * `createGraphqlMatcher` from `@waterlock/gateway/graphql`.
    */
   graphql?: { endpoint: string; matcher: GraphqlMatcher };
+  /**
+   * Custom routing for protocols that are neither REST nor GraphQL (e.g. git).
+   * When set, every request goes through it; `table`, `graphql` and
+   * `decoders` are not used.
+   */
+  router?: Router;
   /**
    * Per-action body decoders (REST only). Only run on the standard route;
    * upload variants of decoded actions are denied.

@@ -6,8 +6,8 @@ description: "What the gateway does with each call, and what the agent gets back
 
 Every call goes through the same steps. Any step can stop it.
 
-1. **Authenticate.** Verify the [session token](/docs/concepts/sessions). The token names the provider, so the agent can't pick another.
-2. **Match.** Turn the call into an [action](/docs/concepts/actions) and its params. Unknown paths, params, fields and arguments are rejected here. So are paths with ambiguous encodings (`//`, `%2f`, `%2e`...) and method-override headers (`X-HTTP-Method-Override` and friends), which could make the upstream see a different call than the gateway checked.
+1. **Authenticate.** Verify the [session token](/docs/concepts/sessions), sent as `Authorization: Bearer <token>` or as the password of Basic auth. The token names the provider, so the agent can't pick another.
+2. **Match.** The provider's router (REST, GraphQL, or a [custom one](#custom-routers)) turns the call into an [action](/docs/concepts/actions) and its params. Unknown paths, params, fields and arguments are rejected here. So are paths with ambiguous encodings (`//`, `%2f`, `%2e`...) and method-override headers (`X-HTTP-Method-Override` and friends), which could make the upstream see a different call than the gateway checked.
 3. **Decode.** For actions with a body decoder (e.g. Gmail `messages.send`), read the body into `r.context`. A body that can't be decoded is denied.
 4. **Decide.** Run the [policy](/docs/concepts/policies), then any [checks](/docs/concepts/checks).
 5. **Forward.** Add the real [credential](/docs/concepts/credentials) and send the exact bytes that were checked to the provider's fixed upstream. Only a short list of request headers is passed on (`accept`, `content-type`, `if-match`...); cookies and the session token are dropped. The response comes back as-is, minus cookies and connection headers.
@@ -21,7 +21,7 @@ Errors are handled per provider. Each provider answers in the shape its official
 - [Gmail](/docs/providers/gmail#errors): Google's error format.
 - [Linear](/docs/providers/linear#errors): GraphQL errors with Linear's `extensions`.
 
-A generic body is the fallback, decided case by case: for a provider whose SDK has no error format to match, and for [custom providers](#custom-providers) that don't set one. REST: `{ error: { code, message, action?, rules? } }`. On a GraphQL endpoint, GraphQL's shape, so clients still surface the message: `{ errors: [{ message, extensions: { code, action?, rules? } }] }`. `unauthenticated` and `unknown_provider` happen before the gateway knows the provider, so they always use the generic REST body.
+A generic body is the fallback, decided case by case: for a provider whose SDK has no error format to match, and for [custom providers](#custom-providers) that don't set one. REST: `{ error: { code, message, action?, rules? } }`. On a GraphQL endpoint, GraphQL's shape, so clients still surface the message: `{ errors: [{ message, extensions: { code, action?, rules? } }] }`. `unauthenticated` and `unknown_provider` happen before the gateway knows the provider, so they use the generic REST body. The exception is a custom router that recognizes the path and answers `unauthenticated` itself.
 
 The gateway's error codes. Each provider page says where the code goes in its shape:
 
@@ -30,7 +30,7 @@ The gateway's error codes. Each provider page says where the code goes in its sh
 | 401 | `unauthenticated` | Missing, malformed, wrongly signed or expired session token. |
 | 403 | `policy_denied` | The policy or a check denied the call. `message` is the reason. |
 | 404, 405, 400 | `policy_denied` | No such action, method or argument, or an ambiguous path. |
-| 400 | `bad_request` | Method-override header, wrong GraphQL content type. |
+| 400 | `bad_request` | Method-override header, wrong GraphQL content type, a request a custom router couldn't read. |
 | 413 | `bad_request` | Body over `maxBodyBytes` (10 MB by default). |
 | 403 | `unknown_provider` | The token's provider isn't on this gateway. |
 | 502 | `upstream_auth` | The credential source failed. |
@@ -49,4 +49,22 @@ createProvider<AcmeRequest>({
   formatError: (e: GatewayError) =>
     Response.json({ code: e.status, message: e.message }, { status: e.status }),
 });
+```
+
+### Custom routers
+
+For a protocol that is neither REST nor GraphQL, give the provider a `router`. It gets every request for that provider and returns the action, params and context rules see, plus the body to forward. A body returned as a stream is forwarded as it arrives, and drained before a denial is sent. `formatError` is the protocol's error shape. The optional `unauthenticated` answers 401s for paths the router recognizes, e.g. with a `WWW-Authenticate` challenge.
+
+```ts
+import { createProvider, type Router } from "@waterlock/gateway";
+
+const router: Router = {
+  async route({ method, url, headers, body, maxBodyBytes }) {
+    // parse what policy needs; { ok: false, status, reason } refuses
+    return { ok: true, action: "acme.sync", params: {}, context: {}, body };
+  },
+  formatError: (e) => new Response(e.message, { status: e.status }),
+};
+
+createProvider<AcmeRequest>({ id: "acme", /* ... */ router });
 ```
