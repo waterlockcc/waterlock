@@ -69,7 +69,7 @@ policy: [
 ]
 ```
 
-The gateway reads the push commands, not the pack: it can't tell a force push from a fast-forward, and doesn't see file contents. Use the host for those (GitHub rulesets, GitLab protected branches), and a token without permission to change CI workflow files. The pack streams through as it arrives, so `maxBodyBytes` doesn't limit pushes.
+The gateway reads the push commands, not the pack: it can't tell a force push from a fast-forward, and doesn't see file contents. Use the host for those (GitHub rulesets, GitLab protected branches), and a token without permission to change CI workflow files.
 
 ## Harness
 
