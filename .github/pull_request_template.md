@@ -14,6 +14,17 @@ One bullet per change, the user-visible effect first. Bold a short lead when the
 Say what stays the same when a reader might worry (breaking changes, URLs, behaviour).
 -->
 
+## BREAKING CHANGE
+
+- What broke, who it affects, and the exact change to make.
+
+  ```ts
+  // before
+  ...
+  // after
+  ...
+  ```
+
 -
 
 ## Checked
