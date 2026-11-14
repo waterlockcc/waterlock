@@ -12,8 +12,10 @@ export type { GitRefUpdate } from "./pktline.js";
 
 export interface GitParams {
   /**
-   * Repository path on the host, without the leading slash and `.git`:
-   * `acme/app`, `group/sub/project`, `org/project/_git/repo`.
+   * Repository path on the host as the agent sent it, without the leading
+   * slash and `.git`: `acme/app`, `group/sub/project`,
+   * `org/project/_git/repo`. GitHub and GitLab ignore case, so compare it
+   * lowercased: `r.params.repo.toLowerCase() === "acme/app"`.
    */
   repo: string;
 }
@@ -49,18 +51,12 @@ export function git<const Id extends string = "git">(opts: {
    * with a token). Bitbucket Cloud: `x-token-auth`.
    */
   username?: string;
-  /**
-   * Lowercase `repo` before rules see it. Default true: GitHub and GitLab
-   * resolve `Acme/App` and `acme/app` to the same repo, so a case-sensitive
-   * rule could be bypassed. Set false for hosts where case matters.
-   */
-  caseInsensitive?: boolean;
 }) {
   const username = opts.username ?? "x-access-token";
   return createProvider<GitRequest<Id>>({
     id: opts.id ?? ("git" as Id),
     upstream: opts.upstream,
-    router: gitRouter({ caseInsensitive: opts.caseInsensitive ?? true }),
+    router: gitRouter(),
     credentials: opts.credentials,
     inject: ({ headers, credential }) =>
       headers.set(

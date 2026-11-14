@@ -22,8 +22,6 @@ export type GitPushContext =
       updates: GitRefUpdate[];
       /** `git push -o <option>` values. */
       push_options: string[];
-      /** `git push --atomic`: all updates apply, or none. */
-      atomic: boolean;
     };
 
 /**
@@ -36,7 +34,7 @@ const ACTIONS = {
   "git-receive-pack": "git.push",
 } as const;
 
-export function gitRouter(opts: { caseInsensitive: boolean }): Router {
+export function gitRouter(): Router {
   return {
     formatError: gitError,
 
@@ -61,7 +59,7 @@ export function gitRouter(opts: { caseInsensitive: boolean }): Router {
           404,
           "not a git smart HTTP path (dumb HTTP and LFS are not supported)",
         );
-      const repo = repoName(m[1]!, opts.caseInsensitive);
+      const repo = repoName(m[1]!);
       if (!repo) return fail(400, "ambiguous repository path");
       const params = { repo };
 
@@ -134,7 +132,6 @@ export function gitRouter(opts: { caseInsensitive: boolean }): Router {
         phase: "rpc",
         updates: commands.updates,
         push_options: commands.pushOptions,
-        atomic: commands.capabilities.includes("atomic"),
       };
       return {
         ok: true,
@@ -154,17 +151,16 @@ export function gitRouter(opts: { caseInsensitive: boolean }): Router {
 }
 
 /**
- * The repo as rules see it: path without the leading slash and `.git`,
- * lowercased when the host treats paths case-insensitively. Undefined for
- * anything a host could read differently: percent-encoding, empty or dot
- * segments, control characters.
+ * The repo as rules see it: path without the leading slash and `.git`, case
+ * kept. Undefined for anything a host could read differently:
+ * percent-encoding, empty or dot segments, control characters.
  */
-function repoName(raw: string, caseInsensitive: boolean): string | undefined {
+function repoName(raw: string): string | undefined {
   if (/[%\\\x00-\x20\x7f]/.test(raw)) return undefined;
   const name = raw.endsWith(".git") ? raw.slice(0, -4) : raw;
   const parts = name.split("/");
   if (parts.some((p) => !p || p === "." || p === "..")) return undefined;
-  return caseInsensitive ? name.toLowerCase() : name;
+  return name;
 }
 
 /** Errors the stream (failing the upstream request) past `max` bytes. */

@@ -34,7 +34,11 @@ beforeAll(async () => {
       }),
     ],
     policy: [
-      { when: (r) => r.action === "git.fetch" && r.params.repo === "acme/app" },
+      {
+        when: (r) =>
+          r.action === "git.fetch" &&
+          r.params.repo.toLowerCase() === "acme/app",
+      },
       {
         when: (r) =>
           r.action === "git.push" &&
@@ -164,10 +168,9 @@ describe("git provider: fetch", () => {
     expect(up.seen).toHaveLength(0);
   });
 
-  it("rules see the repo lowercased: ACME/App passes as acme/app, ACME/Secret is denied", async () => {
+  it("rules see the repo as sent: a lowercased rule matches ACME/App, ACME/Secret is still denied", async () => {
     // Whether upstream resolves ACME/App depends on the host (here, on the
-    // filesystem), so only the gateway's decision is checked: forwarded
-    // as-is, or refused before upstream.
+    // filesystem), so only the gateway's decision is checked.
     up.seen.length = 0;
     await clone("ACME/App");
     expect(up.seen[0]?.path).toBe(

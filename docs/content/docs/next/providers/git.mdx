@@ -12,10 +12,10 @@ import { git } from "@waterlock/gateway/providers/git";
 
 git({ upstream: "https://github.com", credentials });
 
-// several hosts: one provider each, the session token picks the host
-git({ id: "github", upstream: "https://github.com", credentials: githubToken });
-git({ id: "gitlab", upstream: "https://gitlab.com", credentials: gitlabToken });
-git({ id: "forge", upstream: "https://git.example.com/gitea", credentials: forgeToken });
+// several hosts: one provider each, named `<host>-git`; the session token picks the host
+git({ id: "github-git", upstream: "https://github.com", credentials: githubToken });
+git({ id: "gitlab-git", upstream: "https://gitlab.com", credentials: gitlabToken });
+git({ id: "forge-git", upstream: "https://git.example.com/gitea", credentials: forgeToken });
 ```
 
 Upstream gets `Authorization: Basic <username>:<token>`. `username` defaults to `x-access-token`:
@@ -27,7 +27,7 @@ Upstream gets `Authorization: Basic <username>:<token>`. `username` defaults to 
 | Bitbucket Cloud (access token) | `x-token-auth` |
 | Gitea, Forgejo | your username |
 
-Set `caseInsensitive: false` for hosts where repo paths are case-sensitive. By default the repo is lowercased before rules see it, because GitHub and GitLab resolve `Acme/App` and `acme/app` to the same repo.
+`r.params.repo` is the path as the agent sent it. GitHub and GitLab resolve `Acme/App` and `acme/app` to the same repo, so compare it lowercased: `r.params.repo.toLowerCase() === "acme/app"`. Compared as-is, an allow rule refuses `Acme/App`, and a deny rule lets it through.
 
 ## Actions
 
@@ -36,9 +36,9 @@ Set `caseInsensitive: false` for hosts where repo paths are case-sensitive. By d
 | `GET <repo>/info/refs?service=git-upload-pack` | `git.fetch` | `{ phase: "advertise" }` |
 | `POST <repo>/git-upload-pack` | `git.fetch` | `{ phase: "rpc" }` |
 | `GET <repo>/info/refs?service=git-receive-pack` | `git.push` | `{ phase: "advertise" }` |
-| `POST <repo>/git-receive-pack` | `git.push` | `{ phase: "rpc", updates, push_options, atomic }` |
+| `POST <repo>/git-receive-pack` | `git.push` | `{ phase: "rpc", updates, push_options }` |
 
-- `r.params.repo`: the path on the host without `.git`, e.g. `acme/app`, `group/sub/project`, `org/project/_git/repo`.
+- `r.params.repo`: the path on the host without `.git`, case kept, e.g. `acme/app`, `group/sub/project`, `org/project/_git/repo`.
 - `updates`: one entry per ref, `{ ref, old, new, kind }`. `ref` is the full name (`refs/heads/main`, `refs/tags/v1`); `kind` is `create`, `update` or `delete`.
 - `push_options`: the `git push -o` values. Some hosts act on them (GitLab's `ci.skip`, `merge_request.create`).
 - Every push starts with the `advertise` request. Denying it stops the push before any objects are sent, which is how a read-only agent fails fast. A rule that allows pushes must allow both phases; narrow on `r.context.phase === "rpc"` to read `updates`.
@@ -47,7 +47,7 @@ Set `caseInsensitive: false` for hosts where repo paths are case-sensitive. By d
 ```ts
 policy: [
   // read and push acme/app
-  { when: (r) => r.params.repo === "acme/app" },
+  { when: (r) => r.params.repo.toLowerCase() === "acme/app" },
   // only to agent/* branches
   {
     when: (r) =>

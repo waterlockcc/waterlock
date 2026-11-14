@@ -33,13 +33,15 @@ describe.skipIf(!TOKEN)(`git provider against github.com/${REPO}`, () => {
     const gw = createGateway({
       providers: [
         git({
-          id: "github",
+          id: "github-git",
           upstream: "https://github.com",
           credentials: staticToken({ token: TOKEN! }),
         }),
       ],
       policy: [
-        { when: (r) => r.params.repo === REPO.toLowerCase() },
+        {
+          when: (r) => r.params.repo.toLowerCase() === REPO.toLowerCase(),
+        },
         {
           when: (r) =>
             r.action === "git.push" &&
@@ -85,7 +87,7 @@ describe.skipIf(!TOKEN)(`git provider against github.com/${REPO}`, () => {
 
   const agentGit = async (args: string[], cwd = home) => {
     const { token } = await sessions.mint({
-      provider: "github",
+      provider: "github-git",
       agent: "e2e",
       onBehalfOf: "e2e",
     });
@@ -109,7 +111,7 @@ describe.skipIf(!TOKEN)(`git provider against github.com/${REPO}`, () => {
     expect(r.stderr).toContain(`remote: ${PREFIX}`);
   });
 
-  it("repo case doesn't matter on GitHub, and the policy agrees", async () => {
+  it("repo case doesn't matter on GitHub, and a lowercased rule agrees", async () => {
     const r = await agentGit(["ls-remote", `${base}/${REPO.toUpperCase()}`]);
     expect(r, r.stderr).toMatchObject({ code: 0 });
     expect(r.stdout).toContain("refs/heads/main");
