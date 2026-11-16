@@ -7,13 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      graphql:
-        specifier: ^17.0.2
-        version: 17.0.2
-      postal-mime:
-        specifier: 4.2.0
-        version: 4.2.0
     devDependencies:
       '@ai-sdk/openai':
         specifier: ^4.0.110
@@ -39,6 +32,9 @@ importers:
       ai-sdk-provider-claude-code:
         specifier: ^4.4.1
         version: 4.4.1(@anthropic-ai/sdk@1.6.0(zod@4.6.7))(@modelcontextprotocol/sdk@1.32.2(zod@4.6.7))(zod@4.6.7)
+      graphql:
+        specifier: ^17.0.2
+        version: 17.0.2
       prettier:
         specifier: 3.9.10
         version: 3.9.10
@@ -53,6 +49,18 @@ importers:
         version: 5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.6(@types/node@26.6.6)(esbuild@0.28.2)(tsx@4.23.15))
       zod:
         specifier: ^4.6.7
+        version: 4.6.7
+
+  packages/gateway:
+    dependencies:
+      graphql:
+        specifier: ^17.0.2
+        version: 17.0.2
+      postal-mime:
+        specifier: 4.2.0
+        version: 4.2.0
+      zod:
+        specifier: ^4.0.0
         version: 4.6.7
 
 packages:

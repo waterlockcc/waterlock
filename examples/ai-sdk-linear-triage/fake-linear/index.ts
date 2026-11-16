@@ -12,7 +12,10 @@ import { comments, issues, teams, users, type Issue } from "./seed.js";
 const PORT = Number(process.env.PORT ?? 4000);
 const HOST = process.env.HOST ?? "127.0.0.1";
 const sdl = await readFile(
-  new URL("../../../src/providers/linear/schema.graphql", import.meta.url),
+  new URL(
+    "../../../packages/gateway/src/providers/linear/schema.graphql",
+    import.meta.url,
+  ),
   "utf8",
 );
 

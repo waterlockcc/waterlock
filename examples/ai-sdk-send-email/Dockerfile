@@ -2,10 +2,11 @@
 FROM node:26-slim
 WORKDIR /app
 RUN npm install -g pnpm@10.26.0
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/gateway/package.json ./packages/gateway/
 RUN pnpm install --frozen-lockfile
-COPY tsconfig.json ./
-COPY src ./src
+COPY tsconfig.json tsconfig.base.json ./
+COPY packages/gateway/src ./packages/gateway/src
 COPY examples ./examples
 # Shared dir for the session handoff; owned by node so the volume is writable.
 RUN mkdir /shared && chown node:node /shared

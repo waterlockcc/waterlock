@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 const WIDTH = 80;
 const files = execFileSync(
   "git",
-  ["ls-files", "*.ts", ":!src/providers/*/generated.ts"],
+  ["ls-files", "*.ts", ":!packages/*/src/providers/*/generated.ts"],
   { encoding: "utf8" },
 )
   .split("\n")
