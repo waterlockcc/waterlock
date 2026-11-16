@@ -10,7 +10,7 @@ name: Release
 on:
   push:
     branches: [main]
-    paths: [package.json]
+    paths: [packages/gateway/package.json]
   workflow_dispatch:
 
 permissions:
@@ -41,8 +41,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          NAME=$(node -p 'require("./package.json").name')
-          VERSION=$(node -p 'require("./package.json").version')
+          NAME=$(node -p 'require("./packages/gateway/package.json").name')
+          VERSION=$(node -p 'require("./packages/gateway/package.json").version')
           PUBLISHED=$(npm view "$NAME@$VERSION" version 2>/dev/null || true)
           if gh release view "v$VERSION" >/dev/null 2>&1; then RELEASED=yes; else RELEASED=; fi
           # Prereleases (1.2.0-rc.1) go to the "next" dist-tag so `npm i` keeps getting the latest stable.
@@ -73,6 +73,7 @@ jobs:
         if: steps.plan.outputs.publish
         env:
           DIST_TAG: ${{ steps.plan.outputs.prerelease && 'next' || 'latest' }}
+        working-directory: packages/gateway
         run: npm publish --tag "$DIST_TAG" --ignore-scripts
 
       # After npm, so a failed publish never leaves a tag pointing at an unreleased version.

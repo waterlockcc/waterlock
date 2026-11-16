@@ -6,14 +6,14 @@ import {
   checkPrompt,
   checkSystemPrompt,
   verdictSchema,
-} from "../../../src/checks/index.js";
+} from "../../../packages/gateway/src/checks/index.js";
 import {
   createGateway,
   createSessions,
   memoryStore,
   staticToken,
-} from "../../../src/index.js";
-import { gmail } from "../../../src/providers/gmail/index.js";
+} from "../../../packages/gateway/src/index.js";
+import { gmail } from "../../../packages/gateway/src/providers/gmail/index.js";
 import { startFakeGmail } from "./fake-gmail.js";
 
 const PORT = Number(process.env.PORT ?? 8787);

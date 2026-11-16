@@ -1,25 +1,6 @@
 {
-  "compilerOptions": {
-    "target": "ES2023",
-    "lib": [
-      "ES2023",
-      "DOM",
-      "DOM.Iterable"
-    ],
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": false,
-    "skipLibCheck": true,
-    "noEmit": true,
-    "types": [
-      "node"
-    ]
-  },
+  "extends": "./tsconfig.base.json",
   "include": [
-    "src",
-    "test",
     "examples",
     "scripts"
   ]

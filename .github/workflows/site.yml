@@ -8,9 +8,9 @@ name: Site
 on:
   push:
     branches: [main]
-    paths: [docs/**, package.json, .github/workflows/site.yml]
+    paths: [docs/**, packages/gateway/package.json, .github/workflows/site.yml]
   pull_request:
-    paths: [docs/**, package.json, .github/workflows/site.yml]
+    paths: [docs/**, packages/gateway/package.json, .github/workflows/site.yml]
 
 permissions:
   contents: read

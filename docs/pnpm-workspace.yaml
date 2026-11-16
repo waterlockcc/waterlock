@@ -1,0 +1,4 @@
+# The site is its own pnpm project with its own lockfile, not part of the
+# library workspace at the repo root. This file stops pnpm looking further up.
+packages:
+  - .

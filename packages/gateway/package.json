@@ -1,0 +1,88 @@
+{
+  "name": "@waterlock/gateway",
+  "version": "0.3.0",
+  "description": "Credential-injecting policy gateway for AI agent tool calls",
+  "keywords": [
+    "ai-agent",
+    "ai-agents",
+    "agent-security",
+    "llm-security",
+    "api-gateway",
+    "credentials",
+    "secrets",
+    "policy",
+    "proxy",
+    "mcp",
+    "ai-sdk",
+    "claude",
+    "gmail",
+    "linear",
+    "prompt-injection"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/waterlockcc/waterlock.git",
+    "directory": "packages/gateway"
+  },
+  "homepage": "https://waterlock.cc",
+  "bugs": "https://github.com/waterlockcc/waterlock/issues",
+  "engines": {
+    "node": ">=24"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./codegen": {
+      "types": "./dist/codegen/index.d.ts",
+      "default": "./dist/codegen/index.js"
+    },
+    "./providers/gmail": {
+      "types": "./dist/providers/gmail/index.d.ts",
+      "default": "./dist/providers/gmail/index.js"
+    },
+    "./providers/linear": {
+      "types": "./dist/providers/linear/index.d.ts",
+      "default": "./dist/providers/linear/index.js"
+    },
+    "./checks": {
+      "types": "./dist/checks/index.d.ts",
+      "default": "./dist/checks/index.js"
+    },
+    "./graphql": {
+      "types": "./dist/graphql/index.d.ts",
+      "default": "./dist/graphql/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "prepublishOnly": "pnpm typecheck && pnpm test && pnpm build",
+    "gen:gmail": "tsx src/codegen/cli.ts src/providers/gmail/gmail.config.ts",
+    "gen:gmail:fetch": "tsx src/codegen/cli.ts src/providers/gmail/gmail.config.ts --fetch",
+    "gen:linear": "tsx src/codegen/cli.ts src/providers/linear/linear.config.ts",
+    "gen:linear:fetch": "tsx src/codegen/cli.ts src/providers/linear/linear.config.ts --fetch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "graphql": "^17.0.2",
+    "postal-mime": "4.2.0"
+  },
+  "peerDependencies": {
+    "zod": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "zod": {
+      "optional": true
+    }
+  }
+}

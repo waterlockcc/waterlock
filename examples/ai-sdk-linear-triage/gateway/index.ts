@@ -4,8 +4,8 @@ import {
   createGateway,
   createSessions,
   staticToken,
-} from "../../../src/index.js";
-import { linear } from "../../../src/providers/linear/index.js";
+} from "../../../packages/gateway/src/index.js";
+import { linear } from "../../../packages/gateway/src/providers/linear/index.js";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const HOST = process.env.HOST ?? "127.0.0.1";

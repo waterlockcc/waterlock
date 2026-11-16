@@ -12,7 +12,7 @@ import { join } from 'node:path';
 
 const root = join(import.meta.dirname, '..');
 const docs = join(root, 'content/docs');
-const { version } = JSON.parse(readFileSync(join(root, '../package.json'), 'utf8'));
+const { version } = JSON.parse(readFileSync(join(root, '../packages/gateway/package.json'), 'utf8'));
 const [major, minor] = version.split('.');
 const name = `v${major}.${minor}`;
 const target = join(docs, name);
